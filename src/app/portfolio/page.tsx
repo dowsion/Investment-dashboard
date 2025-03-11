@@ -93,11 +93,8 @@ export default async function PortfolioPage() {
       
       {/* 项目列表区域 */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100">
           <h3 className="text-lg font-medium text-gray-800">All Portfolios</h3>
-          <a href="/portfolio/new" className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors">
-            Add New
-          </a>
         </div>
         <div>
           <ProjectList 

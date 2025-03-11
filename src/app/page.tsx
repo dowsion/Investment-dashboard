@@ -1,7 +1,6 @@
 import { getProjects } from '@/lib/data';
 import prisma from '@/lib/prisma';
 import { DollarSignIcon, TrendingUpIcon, LayersIcon } from 'lucide-react';
-import Link from 'next/link';
 import ProjectList from '@/components/ProjectList';
 
 // 禁用页面缓存，确保每次访问都获取最新数据
@@ -81,11 +80,8 @@ export default async function Dashboard() {
       
       {/* 投资组合列表区域 */}
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <h2 className="text-lg font-medium text-gray-900">Recent Portfolios</h2>
-          <Link href="/portfolio" className="text-sm text-blue-600 hover:text-blue-800">
-            View All
-          </Link>
         </div>
         <ProjectList 
           projects={recentProjects} 

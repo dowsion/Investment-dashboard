@@ -22,23 +22,27 @@ const ProjectList = ({ projects, enableSorting = true, variant = 'portfolio' }: 
   // 添加客户端渲染标记，避免水合不匹配
   const [isClient, setIsClient] = useState(false);
   // 存储经过排序的项目
-  const [sortedProjects, setSortedProjects] = useState<Project[]>(projects);
+  const [sortedProjects, setSortedProjects] = useState<Project[]>([]);
 
   // 使用 useEffect 确保所有与客户端相关的操作只在客户端执行
   useEffect(() => {
     setIsClient(true);
-    // 确保每次接收新的projects数据时都重新排序
-    if (projects && projects.length > 0) {
-      setSortedProjects(sortProjectsFunc(projects));
+  }, []);
+
+  // 当projects数据更新时，重新排序
+  useEffect(() => {
+    if (projects && Array.isArray(projects)) {
+      const sorted = enableSorting ? sortProjectsFunc(projects) : projects;
+      setSortedProjects(sorted);
     }
-  }, [projects]); // 添加projects作为依赖项，确保数据更新时重新渲染
+  }, [projects, enableSorting]);
 
   // 当排序字段或方向改变时，重新排序
   useEffect(() => {
-    if (isClient && projects && projects.length > 0) {
+    if (isClient && projects && Array.isArray(projects)) {
       setSortedProjects(sortProjectsFunc(projects));
     }
-  }, [sortField, sortDirection, isClient]);
+  }, [sortField, sortDirection, isClient, projects]);
 
   // Function to format percentage values
   const formatPercentage = (value: number | null): string => {

@@ -91,7 +91,12 @@ export default function NewProjectPage() {
       // 1. 首先创建项目
       const response = await fetch('/api/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          // 添加管理员令牌到请求头
+          'X-Admin-Auth': 'true',
+          'X-Admin-Token': localStorage.getItem('adminAuthenticated') || ''
+        },
         body: JSON.stringify(apiData),
       });
       
