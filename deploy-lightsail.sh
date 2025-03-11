@@ -20,32 +20,88 @@ error() {
 }
 
 # 配置信息 - 请根据实际情况修改
-GITHUB_REPO="https://github.com/yourusername/investment-dashboard.git"
+GITHUB_REPO="https://github.com/dowsion/Investment-dashboard.git"
 PROJECT_DIR="/home/ubuntu/investment-dashboard"
 DOMAIN_NAME="yourdomain.com" # 如果有域名，请填写
 
 # 确保脚本在出错时停止执行
 set -e
 
+# 检查磁盘空间
+check_disk_space() {
+  info "检查磁盘空间..."
+  FREE_SPACE=$(df -h / | awk 'NR==2 {print $4}')
+  info "可用磁盘空间: $FREE_SPACE"
+  
+  # 确保至少有1GB可用空间
+  FREE_KB=$(df / | awk 'NR==2 {print $4}')
+  if [ $FREE_KB -lt 1048576 ]; then
+    error "磁盘空间不足，至少需要1GB可用空间"
+    exit 1
+  fi
+}
+
+# 清理APT缓存和失败的包安装
+clean_apt() {
+  info "清理APT缓存..."
+  sudo apt-get clean
+  sudo apt-get autoclean
+  sudo rm -rf /var/cache/apt/archives/nodejs*
+  sudo dpkg --configure -a
+  sudo apt-get -f install -y
+}
+
 # 1. 更新系统并安装依赖
 info "开始更新系统包..."
+check_disk_space
+clean_apt
 sudo apt update && sudo apt upgrade -y
 
 info "安装基本依赖..."
 sudo apt install -y git curl wget build-essential unzip nginx
 
 # 2. 安装 Node.js
-info "安装 Node.js 20.x..."
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+install_nodejs() {
+  info "尝试安装 Node.js 20.x..."
+  
+  # 先尝试使用NodeSource
+  sudo apt-get remove -y nodejs || true
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  
+  if ! sudo apt-get install -y nodejs; then
+    warn "使用NodeSource安装Node.js失败，尝试使用NVM替代方案..."
+    
+    # 使用NVM替代
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    nvm install 20
+    nvm use 20
+    nvm alias default 20
+    
+    # 添加到bashrc
+    echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
+    echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> ~/.bashrc
+    
+    # 验证是否安装成功
+    if ! command -v node &> /dev/null; then
+      error "Node.js安装失败，请手动安装后继续"
+      exit 1
+    fi
+  fi
+  
+  # 检查Node.js版本
+  node -v
+  npm -v
+}
 
-# 检查Node.js版本
-node -v
-npm -v
+install_nodejs
 
 # 3. 安装 PM2
 info "安装 PM2 进程管理器..."
-sudo npm install -g pm2
+sudo npm install -g pm2 || npm install -g pm2
 
 # 4. 安装 PostgreSQL
 info "安装 PostgreSQL 数据库..."
@@ -138,7 +194,11 @@ pm2 start ecosystem.config.js
 # 设置 PM2 开机自启动
 pm2 save
 pm2 startup
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+if command -v sudo &> /dev/null; then
+  sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+else
+  env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+fi
 
 # 13. 配置 Nginx
 info "配置 Nginx 反向代理..."
@@ -175,28 +235,35 @@ server {
 EOF
 
 # 启用网站配置
-sudo ln -s /etc/nginx/sites-available/investment-dashboard /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -s /etc/nginx/sites-available/investment-dashboard /etc/nginx/sites-enabled/ || true
+sudo rm -f /etc/nginx/sites-enabled/default || true
 
 # 测试 Nginx 配置
-sudo nginx -t
+sudo nginx -t || warn "Nginx配置测试失败，可能需要手动修复"
 
 # 重启 Nginx
-sudo systemctl restart nginx
+sudo systemctl restart nginx || warn "Nginx重启失败，可能需要手动重启"
 
 # 14. 配置防火墙
 info "配置防火墙..."
-sudo apt install -y ufw
-sudo ufw allow ssh
-sudo ufw allow http
-sudo ufw allow https
-sudo ufw --force enable
+if command -v ufw &> /dev/null; then
+  sudo apt install -y ufw
+  sudo ufw allow ssh
+  sudo ufw allow http
+  sudo ufw allow https
+  sudo ufw --force enable
+else
+  warn "未找到ufw，跳过防火墙配置"
+fi
 
 # 15. 安装 SSL 证书 (使用 Let's Encrypt)
 info "安装 SSL 证书..."
 if [ "$DOMAIN_NAME" != "yourdomain.com" ]; then
-  sudo apt install -y certbot python3-certbot-nginx
-  sudo certbot --nginx -d $DOMAIN_NAME --non-interactive --agree-tos --email your-email@example.com
+  if sudo apt install -y certbot python3-certbot-nginx; then
+    sudo certbot --nginx -d $DOMAIN_NAME --non-interactive --agree-tos --email your-email@example.com || warn "SSL证书安装失败，可能需要手动配置"
+  else
+    warn "Certbot安装失败，跳过SSL配置"
+  fi
 else
   warn "未指定域名，跳过 SSL 证书配置。如需配置 SSL，请修改脚本中的 DOMAIN_NAME 变量。"
 fi
