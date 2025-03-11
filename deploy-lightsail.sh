@@ -19,6 +19,32 @@ error() {
   echo -e "${RED}[ERROR]${NC} $(date +"%Y-%m-%d %H:%M:%S") - $1"
 }
 
+# 使用多个服务检测外部IP地址
+get_external_ip() {
+  log "检测服务器外部IP地址..."
+  # 尝试多个服务，按优先级排序
+  EXTERNAL_IP=$(curl -s -m 5 https://api.ipify.org 2>/dev/null || 
+                curl -s -m 5 https://ifconfig.me 2>/dev/null || 
+                curl -s -m 5 https://icanhazip.com 2>/dev/null || 
+                curl -s -m 5 https://ipecho.net/plain 2>/dev/null ||
+                curl -s -m 5 https://checkip.amazonaws.com 2>/dev/null)
+  
+  if [ -z "$EXTERNAL_IP" ]; then
+    warn "无法检测到外部IP地址，尝试本地网络接口..."
+    # 尝试从本地网络接口获取IP (非127.0.0.1的第一个IP)
+    EXTERNAL_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -n 1)
+  fi
+  
+  if [ -z "$EXTERNAL_IP" ]; then
+    warn "无法检测到有效的IP地址，将使用localhost"
+    EXTERNAL_IP="127.0.0.1"
+  else
+    log "检测到服务器IP地址: $EXTERNAL_IP"
+  fi
+  
+  echo "$EXTERNAL_IP"
+}
+
 # 配置变量
 DOMAIN="sgdb.stary.cloud"
 DB_USER="sgadmin"
@@ -27,7 +53,7 @@ DB_NAME="investmentdb"
 PROJECT_DIR="/home/ubuntu/investment-dashboard"
 GITHUB_REPO="https://github.com/dowsion/Investment-dashboard.git"
 LOG_FILE="/home/ubuntu/deployment-log.txt"
-SERVER_IP=$(curl -s ifconfig.me)
+SERVER_IP=$(get_external_ip)
 
 # 初始化日志文件
 > $LOG_FILE
@@ -53,10 +79,49 @@ if [[ $(df / | awk 'NR==2 {print $4}') -lt 1048576 ]]; then
   journalctl --vacuum-time=1d
 fi
 
+# 修复损坏的包管理器
+fix_broken_packages() {
+  log "尝试修复损坏的包..." | tee -a $LOG_FILE
+  
+  # 更新APT缓存
+  apt-get update || warn "更新APT缓存失败，继续尝试其他修复方法"
+  
+  # 尝试修复损坏的依赖
+  apt-get -f install -y || warn "无法修复依赖，继续尝试其他方法"
+  
+  # 清理APT
+  apt-get clean
+  apt-get autoclean
+  
+  # 强制重新配置包
+  dpkg --configure -a || warn "重新配置包失败，继续尝试其他方法"
+  
+  # 删除可能已损坏的APT列表
+  rm -rf /var/lib/apt/lists/*
+  apt-get update
+  
+  log "包修复过程完成" | tee -a $LOG_FILE
+}
+
 # 1. 更新系统并安装依赖
 log "1. 更新系统并安装依赖" | tee -a $LOG_FILE
-apt-get update || handle_error "系统更新失败"
-apt-get install -y git curl npm postgresql postgresql-contrib nginx || handle_error "安装依赖失败"
+apt-get update || { warn "系统更新失败，尝试修复" | tee -a $LOG_FILE; fix_broken_packages; apt-get update; }
+
+# 分步安装依赖以便识别问题
+log "安装Git..." | tee -a $LOG_FILE
+apt-get install -y git || handle_error "安装Git失败"
+
+log "安装Curl..." | tee -a $LOG_FILE
+apt-get install -y curl || handle_error "安装Curl失败"
+
+log "安装npm..." | tee -a $LOG_FILE
+apt-get install -y npm || handle_error "安装npm失败"
+
+log "安装PostgreSQL..." | tee -a $LOG_FILE
+apt-get install -y postgresql postgresql-contrib || handle_error "安装PostgreSQL失败"
+
+log "安装Nginx..." | tee -a $LOG_FILE
+apt-get install -y nginx || handle_error "安装Nginx失败"
 
 # 2. 检查和安装 Node.js 18+
 log "2. 检查和安装 Node.js 18+" | tee -a $LOG_FILE
@@ -70,20 +135,34 @@ if [[ ! "$NODE_VERSION" =~ ^v18 ]] && [[ ! "$NODE_VERSION" =~ ^v20 ]]; then
   apt-get remove -y nodejs || warn "没有旧版本nodejs需要移除"
   apt-get autoremove -y
   
-  # 安装 Node.js 18 (优先使用官方源)
-  curl -fsSL https://deb.nodesource.com/setup_18.x | bash - || {
-    warn "官方源安装失败，尝试使用nvm安装..." | tee -a $LOG_FILE
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    nvm install 18
-    nvm use 18
-  }
-  
-  apt-get install -y nodejs || handle_error "Node.js安装失败"
+  # 多种方法尝试安装Node.js
+  log "尝试方法1: 使用NodeSource安装Node.js..." | tee -a $LOG_FILE
+  if ! curl -fsSL https://deb.nodesource.com/setup_18.x | bash -; then
+    warn "NodeSource安装失败，尝试方法2..." | tee -a $LOG_FILE
+    
+    log "尝试方法2: 直接使用APT安装..." | tee -a $LOG_FILE
+    if ! apt-get install -y nodejs; then
+      warn "APT安装失败，尝试方法3..." | tee -a $LOG_FILE
+      
+      log "尝试方法3: 使用NVM安装..." | tee -a $LOG_FILE
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      nvm install 18
+      nvm use 18
+      nvm alias default 18
+      
+      # 确保nvm设置在启动时加载
+      echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc
+      echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
+      echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> ~/.bashrc
+    fi
+  else
+    apt-get install -y nodejs
+  fi
   
   # 验证安装
-  NODE_VERSION=$(node -v)
+  NODE_VERSION=$(node -v 2>/dev/null || echo "None")
   log "安装后Node.js版本: $NODE_VERSION" | tee -a $LOG_FILE
   
   if [[ ! "$NODE_VERSION" =~ ^v18 ]] && [[ ! "$NODE_VERSION" =~ ^v20 ]]; then
