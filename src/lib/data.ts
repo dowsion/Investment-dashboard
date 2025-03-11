@@ -1,5 +1,9 @@
 import prisma from './prisma';
 
+// 禁用Next.js的默认数据缓存行为
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function getProjects(limit?: number) {
   try {
     const projects = await prisma.project.findMany({

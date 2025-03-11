@@ -3,6 +3,10 @@ import { DollarSignIcon, TrendingUpIcon, LayersIcon, PieChartIcon } from 'lucide
 import ProjectList from '@/components/ProjectList';
 import prisma from '@/lib/prisma';
 
+// 禁用页面缓存，确保每次访问都获取最新数据
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function PortfolioPage() {
   // Get all projects for the portfolio page
   const projects = await getProjects();
@@ -91,6 +95,9 @@ export default async function PortfolioPage() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100 flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-800">All Portfolios</h3>
+          <a href="/portfolio/new" className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors">
+            Add New
+          </a>
         </div>
         <div>
           <ProjectList 
