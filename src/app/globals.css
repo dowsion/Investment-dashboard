@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 7, 19, 48;
+  --background-end-rgb: 14, 28, 61;
+  
+  --dashboard-blue: #3a67c4;        /* 数值使用的蓝色 */
+  --dashboard-lightblue: #5e82d2;   /* 图表线条蓝色 */
+  --dashboard-area-blue: #4b7bd3;   /* 图表区域蓝色 */
+  --dashboard-cyan: #38b2c8;        /* 副标题青色 */
+  --dashboard-white: #ffffff;       /* 白色文本 */
+  --dashboard-navy: #051029;        /* 极深海军蓝背景 */
+  --dashboard-navy-light: #0a1a3a;  /* 导航栏蓝色 */
+  --dashboard-gray: #f7f9fc;        /* 浅灰色背景 */
+  --dashboard-border: #e8edf5;      /* 表格边框色 */
+  --text-dark: #333333;             /* 深色文本 */
+  --text-gray: #666666;             /* 中等灰色文本 */
+}
+
+/* 移动端隐藏副标题和Logo */
+@media (max-width: 767px) {
+  .dashboard-subtitle,
+  .logo-container {
+    display: none !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 15, 23, 42;
+    --background-end-rgb: 30, 58, 138;
+  }
+}
+
+body {
+  color: var(--dashboard-white);
+  background-color: var(--dashboard-navy);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* 主内容区背景为白色区域的文本应该为深色 */
+main {
+  color: var(--text-dark);
+}
+
+/* 图标大小控制 */
+svg {
+  max-width: 20px;
+  max-height: 20px;
+  height: auto;
+  width: auto;
+  flex-shrink: 0;
+}
+
+@layer base {
+  h1 {
+    @apply text-2xl font-bold font-display;
+  }
+  h2 {
+    @apply text-xl font-semibold font-display;
+  }
+  h3 {
+    @apply text-lg font-medium font-display;
+  }
+}
+
+@layer components {
+  /* 主标题 - Fund Dashboard Example */
+  .dashboard-title {
+    @apply text-5xl font-display font-bold text-white tracking-tight;
+  }
+  
+  /* 副标题 - Create and customize... */
+  .dashboard-subtitle {
+    @apply text-cyan-400 text-base font-medium mt-2;
+  }
+  
+  /* 大数值显示 - $1.20 B */
+  .dashboard-value {
+    @apply text-[#3a67c4] text-dashboard-value font-display font-semibold;
+  }
+  
+  /* 百分比值 - 12.40% */
+  .dashboard-percentage {
+    @apply text-[#3a67c4] text-dashboard-value font-display font-semibold;
+  }
+  
+  /* 卡片标签 - Fund Size, Invested */
+  .dashboard-label {
+    @apply text-sm text-gray-600 font-medium mb-3;
+  }
+  
+  /* 卡片底部小标签 - Net, Gross, IRR */
+  .dashboard-sublabel {
+    @apply text-xs text-gray-400 font-medium uppercase tracking-wide;
+  }
+  
+  /* 白色卡片 */
+  .dashboard-card {
+    @apply bg-white rounded-lg shadow-dashboard-card p-6 overflow-hidden border border-dashboard-border text-gray-800;
+  }
+  
+  /* 图表容器 */
+  .dashboard-chart-container {
+    @apply bg-white rounded-lg shadow-dashboard-card p-4 overflow-hidden border border-dashboard-border text-gray-800;
+  }
+  
+  /* 导航标签 */
+  .dashboard-tabs {
+    @apply flex items-center justify-start space-x-8 whitespace-nowrap;
+    overflow-y: hidden !important;
+  }
+  
+  .dashboard-tab {
+    @apply px-6 py-5 font-medium transition-colors text-blue-100 hover:text-white hover:bg-[#162a56] flex-shrink-0;
+    flex: 0 0 auto;
+    height: 56px;
+  }
+  
+  .dashboard-tab-active {
+    @apply text-white border-b-2 border-[#3a67c4] bg-[#162a56] flex-shrink-0;
+    flex: 0 0 auto;
+    height: 56px;
+  }
+  
+  /* 表格样式 */
+  .dashboard-table {
+    @apply w-full border-collapse text-gray-800;
+  }
+  
+  .dashboard-table th {
+    @apply p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50;
+  }
+  
+  .dashboard-table td {
+    @apply p-3 text-sm text-gray-900 border-t border-gray-100;
+  }
+  
+  .dashboard-table tbody tr:hover {
+    @apply bg-gray-50;
+  }
+  
+  /* 链接样式 */
+  .dashboard-link {
+    @apply text-[#3a67c4] hover:underline font-medium;
+  }
+  
+  /* 通用按钮 */
+  .btn {
+    @apply px-4 py-2 rounded font-medium transition duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-[#3a67c4] text-white hover:bg-[#5e82d2];
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-dashboard-card p-5 overflow-hidden text-gray-800;
+  }
+
+  /* 数据表格 */
+  .data-table {
+    @apply w-full text-gray-800;
+  }
+  
+  .data-table th {
+    @apply p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  }
+  
+  .data-table td {
+    @apply p-3 text-sm text-gray-900 border-t border-gray-200;
+  }
+  
+  .data-table tbody tr:hover {
+    @apply bg-gray-50;
+  }
+
+  /* 隐藏导航栏容器的滚动条 */
+  .nav-scroll-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .nav-scroll-container::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
+}
