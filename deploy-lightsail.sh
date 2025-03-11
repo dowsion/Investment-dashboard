@@ -117,9 +117,24 @@ DB_NAME="investment_dashboard"
 DB_USER="dashboard_user"
 DB_PASSWORD=$(openssl rand -base64 12) # 生成随机密码
 
-# 创建数据库和用户
-sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+# 检查数据库是否已存在
+if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw $DB_NAME; then
+  info "数据库 $DB_NAME 已存在，跳过创建步骤"
+else
+  info "创建数据库 $DB_NAME..."
+  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
+fi
+
+# 检查用户是否已存在
+if sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
+  info "用户 $DB_USER 已存在，更新密码..."
+  sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+else
+  info "创建用户 $DB_USER..."
+  sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+fi
+
+# 授予用户权限
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
 
 # 6. 克隆项目代码
@@ -149,6 +164,7 @@ JWT_SECRET=$(openssl rand -base64 32)
 
 # 其他环境变量
 NEXTAUTH_URL=https://$DOMAIN_NAME
+NEXTAUTH_URL_INTERNAL=http://localhost:3000
 EOF
 
 info "环境配置文件创建成功。数据库密码: $DB_PASSWORD"
