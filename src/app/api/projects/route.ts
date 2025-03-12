@@ -32,11 +32,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create new project
+    // Create new portfolio
     const project = await prismaClient.project.create({
       data: {
         name: data.name,
         briefIntro: data.briefIntro,
+        portfolioStatus: data.portfolioStatus,
         investmentDate: new Date(data.investmentDate),
         capitalInvested: data.capitalInvested,
         initialShareholdingRatio: data.initialShareholdingRatio,
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error creating project:', error);
+    console.error('Error creating portfolio:', error);
     return NextResponse.json(
-      { error: 'Failed to create project' },
+      { error: 'Failed to create portfolio' },
       { status: 500 }
     );
   }
@@ -82,9 +83,9 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error('Error fetching portfolios:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch projects' },
+      { error: 'Failed to fetch portfolios' },
       { status: 500 }
     );
   }

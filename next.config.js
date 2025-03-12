@@ -11,8 +11,6 @@ const nextConfig = {
     // 确保使用标准的Webpack流程
     webpackBuildWorker: false
   },
-  // 配置输出目录作为静态导出
-  output: 'standalone',
   // 配置静态文件处理
   images: {
     unoptimized: true,
@@ -26,6 +24,8 @@ const nextConfig = {
       },
     ];
   },
+  // 根据环境变量判断是否使用standalone输出
+  ...(process.env.NODE_ENV === 'production' ? { output: 'standalone' } : {}),
 };
 
 module.exports = nextConfig; 

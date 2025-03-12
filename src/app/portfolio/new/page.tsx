@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { DocumentIcon, DocumentPlusIcon } from '@heroicons/react/24/outline';
 import AuthCheck from '@/components/AuthCheck';
 
-export default function NewProjectPage() {
+export default function NewPortfolioPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',

@@ -1,82 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+// Disable caching for API routes
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
+// 验证管理员身份的函数
+const verifyAdmin = (request: NextRequest) => {
+  const adminAuth = request.headers.get('X-Admin-Auth');
+  const adminToken = request.headers.get('X-Admin-Token');
+  
+  return adminAuth === 'true' && adminToken;
+};
+
+// GET a single portfolio by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Extract the id from params
-    const { id } = params;
+    const id = params.id;
     
     const project = await prisma.project.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
       include: {
-        documents: true,
-      },
+        documents: true
+      }
     });
-
+    
     if (!project) {
       return NextResponse.json(
-        { error: 'Project not found' },
+        { error: 'Portfolio not found' },
         { status: 404 }
       );
     }
-
+    
     return NextResponse.json(project);
   } catch (error) {
-    console.error('Error fetching project:', error);
+    console.error('Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch project' },
+      { error: 'An error occurred while fetching the portfolio' },
       { status: 500 }
     );
   }
 }
 
+// UPDATE portfolio
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Extract the id from params
-    const { id } = params;
-    const data = await request.json();
-
-    // Validate required fields
-    if (!data.name || !data.investmentDate || data.capitalInvested === undefined) {
+    // 验证管理员身份
+    if (!verifyAdmin(request)) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+        { error: 'Unauthorized - Only administrators can update portfolios' },
+        { status: 403 }
       );
     }
-
-    // Check if project exists
+    
+    const id = params.id;
+    const data = await request.json();
+    
     const existingProject = await prisma.project.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
-
+    
     if (!existingProject) {
       return NextResponse.json(
-        { error: 'Project not found' },
+        { error: 'Portfolio not found' },
         { status: 404 }
       );
     }
-
-    // Update project
+    
+    // Update the project with new data
     const updatedProject = await prisma.project.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         name: data.name,
         briefIntro: data.briefIntro,
-        investmentDate: new Date(data.investmentDate),
+        portfolioStatus: data.portfolioStatus,
+        investmentDate: data.investmentDate,
         capitalInvested: data.capitalInvested,
         initialShareholdingRatio: data.initialShareholdingRatio,
         currentShareholdingRatio: data.currentShareholdingRatio,
@@ -86,58 +90,55 @@ export async function PUT(
         moic: data.moic,
       },
     });
-
+    
     return NextResponse.json(updatedProject);
   } catch (error) {
-    console.error('Error updating project:', error);
+    console.error('Error updating portfolio:', error);
     return NextResponse.json(
-      { error: 'Failed to update project' },
+      { error: 'Failed to update portfolio' },
       { status: 500 }
     );
   }
 }
 
+// DELETE portfolio
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Extract the id from params
-    const { id } = params;
+    // 验证管理员身份
+    if (!verifyAdmin(request)) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Only administrators can delete portfolios' },
+        { status: 403 }
+      );
+    }
     
-    // Check if project exists
+    const id = params.id;
+    
+    // Check if the project exists
     const existingProject = await prisma.project.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
-
+    
     if (!existingProject) {
       return NextResponse.json(
-        { error: 'Project not found' },
+        { error: 'Portfolio not found' },
         { status: 404 }
       );
     }
-
-    // Delete all documents associated with the project
-    await prisma.document.deleteMany({
-      where: {
-        projectId: id,
-      },
-    });
-
+    
     // Delete the project
     await prisma.project.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
-
+    
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    console.error('Error deleting portfolio:', error);
     return NextResponse.json(
-      { error: 'Failed to delete project' },
+      { error: 'Failed to delete portfolio' },
       { status: 500 }
     );
   }
