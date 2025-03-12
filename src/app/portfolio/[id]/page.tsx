@@ -13,12 +13,12 @@ const documentTypeMap: Record<string, string> = {
   'due_diligence': 'Due Diligence',
   'contract': 'Investment Agreement',
   'payment_proof': 'Proof of Payment',
-  'receipt': 'Payment Receipt',
+  'receipt': 'Payment Receipt Acknowledge Letter',
   'general': 'General Disclosure',
   'other': 'Other Documents'
 };
 
-// 文档类型排序顺序
+// 文档类型排序顺序 - 调整为与图片一致的顺序
 const typeOrder = [
   'business_plan',
   'investment_committee',
@@ -127,27 +127,26 @@ export default async function PortfolioDetailPage({
             <p className="text-gray-500">No documents available for this portfolio.</p>
           ) : (
             <div className="space-y-4">
-              {/* 按照指定顺序显示文档类型 */}
+              {/* 按照指定顺序显示文档类型及文件 */}
               {typeOrder.map(type => {
                 if (!documentsByType[type] || documentsByType[type].length === 0) return null;
                 
+                // 取该类型的首个文档显示
+                const doc = documentsByType[type][0];
+                
                 return (
-                  <div key={type} className="mb-3">
-                    <h3 className="font-medium text-gray-800 mb-2">{documentTypeMap[type]}</h3>
-                    {documentsByType[type].map(doc => (
-                      <Link
-                        key={doc.id}
-                        href={getDocumentUrl(doc.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block p-2 border rounded mb-2 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center">
-                          <DocumentTextIcon className="h-[0.8rem] w-[0.8rem] md:h-[1rem] md:w-[1rem] text-blue-500 mr-2 md:mr-3" />
-                          <span className="text-sm md:text-base">{doc.name}</span>
-                        </div>
-                      </Link>
-                    ))}
+                  <div key={type} className="border-b pb-3 mb-3 last:border-b-0">
+                    <Link
+                      href={getDocumentUrl(doc.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="text-sm md:text-base">
+                        <span className="font-medium">{documentTypeMap[type]}: </span>
+                        <span className="text-blue-600">{doc.name}</span>
+                      </div>
+                    </Link>
                   </div>
                 );
               })}
