@@ -21,6 +21,7 @@ export default function EditPortfolioPage() {
   const [formData, setFormData] = useState({
     name: '',
     briefIntro: '',
+    portfolioStatus: '',
     investmentDate: '',
     capitalInvested: '',
     initialShareholdingRatio: '',
@@ -57,6 +58,7 @@ export default function EditPortfolioPage() {
         setFormData({
           name: portfolio.name,
           briefIntro: portfolio.briefIntro || '',
+          portfolioStatus: portfolio.portfolioStatus || '',
           investmentDate: formattedDate,
           capitalInvested: portfolio.capitalInvested.toString(),
           initialShareholdingRatio: portfolio.initialShareholdingRatio?.toString() || '',
@@ -128,6 +130,7 @@ export default function EditPortfolioPage() {
       const portfolioData = {
         name: formData.name,
         briefIntro: formData.briefIntro || null,
+        portfolioStatus: formData.portfolioStatus || null,
         investmentDate: new Date(formData.investmentDate),
         capitalInvested: parseFloat(formData.capitalInvested),
         initialShareholdingRatio: formData.initialShareholdingRatio ? parseFloat(formData.initialShareholdingRatio) : null,
@@ -464,6 +467,20 @@ export default function EditPortfolioPage() {
                 id="briefIntro"
                 name="briefIntro"
                 value={formData.briefIntro}
+                onChange={handleChange}
+                rows={4}
+                className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-gray-700 font-bold mb-2" htmlFor="portfolioStatus">
+                Portfolio Status
+              </label>
+              <textarea
+                id="portfolioStatus"
+                name="portfolioStatus"
+                value={formData.portfolioStatus}
                 onChange={handleChange}
                 rows={4}
                 className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"

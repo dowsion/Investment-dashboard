@@ -11,6 +11,7 @@ export default function NewProjectPage() {
   const [formData, setFormData] = useState({
     name: '',
     briefIntro: '',
+    portfolioStatus: '',
     investmentDate: '',
     capitalInvested: '',
     initialShareholdingRatio: '',
@@ -128,6 +129,7 @@ export default function NewProjectPage() {
         setFormData({
           name: '',
           briefIntro: '',
+          portfolioStatus: '',
           investmentDate: '',
           capitalInvested: '',
           initialShareholdingRatio: '',
@@ -199,6 +201,38 @@ export default function NewProjectPage() {
                 required
                 className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
                 placeholder="Enter portfolio name"
+              />
+            </div>
+            
+            {/* Brief Introduction - Full Width */}
+            <div className="mb-6">
+              <label className="block text-gray-700 font-bold mb-2" htmlFor="briefIntro">
+                Portfolio Introduction
+              </label>
+              <textarea
+                id="briefIntro"
+                name="briefIntro"
+                value={formData.briefIntro}
+                onChange={handleChange}
+                rows={4}
+                className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                placeholder="Enter a brief introduction of the portfolio"
+              />
+            </div>
+            
+            {/* Portfolio Status - Full Width */}
+            <div className="mb-6">
+              <label className="block text-gray-700 font-bold mb-2" htmlFor="portfolioStatus">
+                Portfolio Status
+              </label>
+              <textarea
+                id="portfolioStatus"
+                name="portfolioStatus"
+                value={formData.portfolioStatus}
+                onChange={handleChange}
+                rows={4}
+                className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                placeholder="Enter current status of the portfolio"
               />
             </div>
             
@@ -310,22 +344,6 @@ export default function NewProjectPage() {
                   />
                 </div>
               </div>
-            </div>
-            
-            {/* Brief Introduction - Full Width */}
-            <div className="mt-6">
-              <label className="block text-gray-700 font-bold mb-2" htmlFor="briefIntro">
-                Brief Introduction
-              </label>
-              <textarea
-                id="briefIntro"
-                name="briefIntro"
-                value={formData.briefIntro}
-                onChange={handleChange}
-                className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
-                placeholder="Brief description of the portfolio"
-                rows={3}
-              />
             </div>
           </div>
           

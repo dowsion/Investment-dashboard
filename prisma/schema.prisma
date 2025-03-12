@@ -27,6 +27,7 @@ model Project {
   id                     String   @id @default(uuid())
   name                   String
   briefIntro             String?
+  portfolioStatus        String?
   investmentDate         DateTime
   capitalInvested        Float
   initialShareholdingRatio Float?
