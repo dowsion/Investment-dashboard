@@ -2,13 +2,23 @@ import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
-import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { 
+  DocumentTextIcon,
+  DocumentChartBarIcon, 
+  ClipboardDocumentCheckIcon, 
+  MagnifyingGlassCircleIcon,
+  DocumentIcon,
+  BanknotesIcon,
+  ReceiptRefundIcon,
+  InformationCircleIcon,
+  DocumentDuplicateIcon
+} from '@heroicons/react/24/outline';
 
 const prisma = new PrismaClient();
 
 // 文档类型映射
 const documentTypeMap: Record<string, string> = {
-  'business_plan': 'Project Business Plan',
+  'business_plan': 'Portfolio Business Plan',
   'investment_committee': 'Investment Committee Records',
   'due_diligence': 'Due Diligence',
   'contract': 'Investment Agreement',
@@ -16,6 +26,18 @@ const documentTypeMap: Record<string, string> = {
   'receipt': 'Payment Receipt Acknowledge Letter',
   'general': 'General Disclosure',
   'other': 'Other Documents'
+};
+
+// 文档类型对应的图标映射
+const documentIconMap: Record<string, any> = {
+  'business_plan': DocumentChartBarIcon,
+  'investment_committee': ClipboardDocumentCheckIcon,
+  'due_diligence': MagnifyingGlassCircleIcon,
+  'contract': DocumentIcon,
+  'payment_proof': BanknotesIcon,
+  'receipt': ReceiptRefundIcon,
+  'general': InformationCircleIcon,
+  'other': DocumentDuplicateIcon
 };
 
 // 文档类型排序顺序 - 调整为与图片一致的顺序
@@ -133,6 +155,8 @@ export default async function PortfolioDetailPage({
                 
                 // 取该类型的首个文档显示
                 const doc = documentsByType[type][0];
+                // 获取对应类型的图标组件
+                const IconComponent = documentIconMap[type] || DocumentTextIcon;
                 
                 return (
                   <div key={type} className="border-b pb-3 mb-3 last:border-b-0">
@@ -142,9 +166,10 @@ export default async function PortfolioDetailPage({
                       rel="noopener noreferrer"
                       className="block hover:bg-gray-50 transition-colors"
                     >
-                      <div className="text-sm md:text-base">
+                      <div className="text-sm md:text-base flex items-center">
+                        <IconComponent className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
                         <span className="font-medium">{documentTypeMap[type]}: </span>
-                        <span className="text-blue-600">{doc.name}</span>
+                        <span className="text-blue-600 ml-1">{doc.name}</span>
                       </div>
                     </Link>
                   </div>
