@@ -198,6 +198,7 @@ export default function UploadDocumentPage() {
             <div>
               <label className="block text-gray-700 font-bold mb-2" htmlFor="file">
                 Document File <span className="text-red-500">*</span>
+                <span className="ml-2 text-xs text-gray-500 font-normal">(Max file size: 50MB)</span>
               </label>
               <input
                 type="file"

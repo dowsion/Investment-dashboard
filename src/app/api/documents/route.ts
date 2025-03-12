@@ -57,8 +57,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // 验证文件大小 (50MB限制)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      console.error('File too large:', file.size, 'bytes. Max allowed:', MAX_FILE_SIZE, 'bytes');
+      return NextResponse.json(
+        { error: `File size exceeds the limit (50MB). Current file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB` },
+        { status: 413 }
+      );
+    }
+    
     // 验证文件类型
-    // TODO: 实现文件类型和大小的验证
+    // TODO: 实现文件类型验证
     
     // 验证项目存在
     const project = await prisma.project.findUnique({

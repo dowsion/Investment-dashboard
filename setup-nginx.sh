@@ -106,7 +106,7 @@ server {
     error_log $NGINX_LOG_DIR/${DOMAIN}_error.log;
 
     # 增加缓冲区大小，避免413错误
-    client_max_body_size 20M;
+    client_max_body_size 50M;
     
     location / {
         proxy_pass http://localhost:$NEXT_APP_PORT;

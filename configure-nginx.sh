@@ -134,7 +134,7 @@ server {
     }
     
     # 允许大文件上传
-    client_max_body_size 20M;
+    client_max_body_size 50M;
     
     # 静态文件缓存
     location /_next/static/ {
