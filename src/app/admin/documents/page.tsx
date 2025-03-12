@@ -241,7 +241,7 @@ export default function AdminDocuments() {
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end items-center space-x-4">
                         {doc.url && (
                           <>
                             <Link 
@@ -251,7 +251,7 @@ export default function AdminDocuments() {
                               rel="noopener noreferrer"
                             >
                               <EyeIcon className="h-4 w-4 mr-1" />
-                              <span>View</span>
+                              <span className="hidden sm:inline">View</span>
                             </Link>
                             <Link 
                               href={getDocumentUrl(doc.url)} 
@@ -259,7 +259,7 @@ export default function AdminDocuments() {
                               download={doc.name || true}
                             >
                               <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-                              <span>Download</span>
+                              <span className="hidden sm:inline">Download</span>
                             </Link>
                             <button
                               onClick={() => deleteDocument(doc.id, doc.name)}
@@ -267,7 +267,7 @@ export default function AdminDocuments() {
                               className="text-red-600 hover:text-red-800 inline-flex items-center"
                             >
                               <TrashIcon className="h-4 w-4 mr-1" />
-                              <span>Delete</span>
+                              <span className="hidden sm:inline">Delete</span>
                             </button>
                           </>
                         )}

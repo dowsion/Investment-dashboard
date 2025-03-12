@@ -52,7 +52,13 @@ export default function DocumentsPage() {
         const response = await fetch('/api/documents');
         if (response.ok) {
           const data = await response.json();
-          setDocuments(data);
+          
+          // 过滤只显示类型为general且可见的文档
+          const filteredDocs = data.filter((doc: DocumentWithProject) => 
+            doc.type === 'general' && doc.isVisible === true
+          );
+          
+          setDocuments(filteredDocs);
         } else {
           console.error('Failed to fetch documents');
         }
@@ -83,6 +89,15 @@ export default function DocumentsPage() {
       : <ArrowDownIcon className="w-4 h-4 ml-1 inline-block" />;
   };
 
+  // 获取正确的文件URL
+  const getDocumentUrl = (originalUrl: string) => {
+    if (originalUrl.startsWith('/uploads/')) {
+      const filename = originalUrl.replace('/uploads/', '');
+      return `/api/files/${filename}`;
+    }
+    return originalUrl;
+  };
+
   const sortedDocuments = [...documents].sort((a, b) => {
     if (sortField === 'name') {
       const nameA = a.name.toLowerCase();
@@ -111,8 +126,8 @@ export default function DocumentsPage() {
   return (
     <div className="container mx-auto px-4 py-4 md:py-8 max-w-full xl:max-w-[1400px] 2xl:max-w-[1600px]">
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Documents</h1>
-        <p className="text-gray-500 mt-2">Access and download investment-related documentation</p>
+        <h1 className="text-2xl md:text-3xl font-bold">General Documents</h1>
+        <p className="text-gray-500 mt-2">Access and download general disclosure documents</p>
       </div>
       
       {loading ? (
@@ -122,7 +137,7 @@ export default function DocumentsPage() {
       ) : !documents || documents.length === 0 ? (
         <div className="bg-white p-8 rounded-lg shadow text-center">
           <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 text-lg mb-2">No documents available</p>
+          <p className="text-gray-500 text-lg mb-2">No general documents available</p>
           <p className="text-gray-400 text-sm">Documents will appear here when they become available</p>
         </div>
       ) : (
@@ -141,21 +156,15 @@ export default function DocumentsPage() {
                       {renderSortIndicator('name')}
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Related Portfolio
-                  </th>
                   <th 
                     scope="col" 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('createdAt')}
                   >
                     <div className="flex items-center">
-                      Upload Date & Time
+                      Upload Date
                       {renderSortIndicator('createdAt')}
                     </div>
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -165,7 +174,7 @@ export default function DocumentsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedDocuments.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       <div className="flex items-center">
                         <DocumentIcon className="h-5 w-5 text-[#3a67c4] mr-3 flex-shrink-0" />
                         <div className="text-sm font-medium text-gray-900">{doc.name}</div>
@@ -173,38 +182,28 @@ export default function DocumentsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {doc.project?.name || 'General'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
                         {formatDateTime(doc.createdAt)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {doc.type ? doc.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Document'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {doc.url && (
-                        <div className="flex justify-end space-x-2">
+                        <div className="flex justify-end items-center space-x-4">
                           <Link 
-                            href={doc.url} 
+                            href={getDocumentUrl(doc.url)} 
                             className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"
                             target="_blank"
                             rel="noopener noreferrer"
                           >
                             <EyeIcon className="h-4 w-4 mr-1" />
-                            <span>View</span>
+                            <span className="hidden sm:inline">View</span>
                           </Link>
                           <Link 
-                            href={doc.url} 
+                            href={getDocumentUrl(doc.url)} 
                             className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"
-                            download
+                            download={doc.name || true}
                           >
                             <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-                            <span>Download</span>
+                            <span className="hidden sm:inline">Download</span>
                           </Link>
                         </div>
                       )}

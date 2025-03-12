@@ -6,6 +6,30 @@ import { DocumentTextIcon } from '@heroicons/react/24/outline';
 
 const prisma = new PrismaClient();
 
+// 文档类型映射
+const documentTypeMap: Record<string, string> = {
+  'business_plan': 'Project Business Plan',
+  'investment_committee': 'Investment Committee Records',
+  'due_diligence': 'Due Diligence',
+  'contract': 'Investment Agreement',
+  'payment_proof': 'Proof of Payment',
+  'receipt': 'Payment Receipt',
+  'general': 'General Disclosure',
+  'other': 'Other Documents'
+};
+
+// 文档类型排序顺序
+const typeOrder = [
+  'business_plan',
+  'investment_committee',
+  'due_diligence',
+  'contract',
+  'payment_proof',
+  'receipt',
+  'general',
+  'other'
+];
+
 // 根据文档URL获取可靠的访问URL
 function getDocumentUrl(originalUrl: string) {
   // 如果URL以/uploads/开头，转换为API路由
@@ -21,7 +45,14 @@ async function getProject(id: string) {
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        documents: true
+        documents: {
+          where: {
+            isVisible: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          }
+        }
       }
     });
     
@@ -59,6 +90,20 @@ export default async function PortfolioDetailPage({
     return format(new Date(date), 'yyyy/MM/dd');
   };
 
+  // 按类型对文档分组
+  const documentsByType: Record<string, any[]> = {};
+  
+  // 将文档按类型分组
+  if (portfolio.documents && portfolio.documents.length > 0) {
+    portfolio.documents.forEach((doc: any) => {
+      const type = doc.type || 'other';
+      if (!documentsByType[type]) {
+        documentsByType[type] = [];
+      }
+      documentsByType[type].push(doc);
+    });
+  }
+
   return (
     <div className="container mx-auto px-4 py-4 md:py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-8">
@@ -77,24 +122,37 @@ export default async function PortfolioDetailPage({
         {/* Transaction Process */}
         <div className="bg-white p-4 md:p-6 rounded-lg shadow">
           <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Transaction Process</h2>
-          <div className="space-y-3">
-            {portfolio.documents && portfolio.documents.length > 0 ? (
-              portfolio.documents.map((doc: any) => (
-                <Link
-                  key={doc.id}
-                  href={getDocumentUrl(doc.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 md:p-3 border rounded flex items-center hover:bg-gray-50 transition-colors"
-                >
-                  <DocumentTextIcon className="h-[0.8rem] w-[0.8rem] md:h-[1rem] md:w-[1rem] text-blue-500 mr-2 md:mr-3" />
-                  <span className="text-sm md:text-base">{doc.name}</span>
-                </Link>
-              ))
-            ) : (
-              <p className="text-gray-500">No documents available for this portfolio.</p>
-            )}
-          </div>
+          
+          {!portfolio.documents || portfolio.documents.length === 0 ? (
+            <p className="text-gray-500">No documents available for this portfolio.</p>
+          ) : (
+            <div className="space-y-4">
+              {/* 按照指定顺序显示文档类型 */}
+              {typeOrder.map(type => {
+                if (!documentsByType[type] || documentsByType[type].length === 0) return null;
+                
+                return (
+                  <div key={type} className="mb-3">
+                    <h3 className="font-medium text-gray-800 mb-2">{documentTypeMap[type]}</h3>
+                    {documentsByType[type].map(doc => (
+                      <Link
+                        key={doc.id}
+                        href={getDocumentUrl(doc.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block p-2 border rounded mb-2 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <DocumentTextIcon className="h-[0.8rem] w-[0.8rem] md:h-[1rem] md:w-[1rem] text-blue-500 mr-2 md:mr-3" />
+                          <span className="text-sm md:text-base">{doc.name}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         {/* Portfolio Status */}

@@ -157,9 +157,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const url = new URL(request.url);
+    const type = url.searchParams.get('type');
+    const visibleOnly = url.searchParams.get('visible') === 'true';
+    
+    // 构建查询条件
+    const whereClause: any = {};
+    
+    // 根据类型筛选
+    if (type) {
+      whereClause.type = type;
+    }
+    
+    // 只显示可见文档
+    if (visibleOnly) {
+      whereClause.isVisible = true;
+    }
+    
+    console.log('Fetching documents with filters:', whereClause);
+    
     const documents = await prisma.document.findMany({
+      where: whereClause,
       include: {
         project: {
           select: {
