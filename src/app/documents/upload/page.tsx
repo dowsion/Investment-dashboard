@@ -54,11 +54,6 @@ export default function UploadDocumentPage() {
       return;
     }
     
-    if (!projectId) {
-      setError('Please select a project');
-      return;
-    }
-    
     setLoading(true);
     setError('');
     
@@ -130,17 +125,16 @@ export default function UploadDocumentPage() {
           <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="block text-gray-700 font-bold mb-2" htmlFor="projectId">
-                Associated Project <span className="text-red-500">*</span>
+                Associated Portfolio
               </label>
               <select
                 id="projectId"
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
-                required
                 disabled={projectsLoading}
               >
-                <option value="">Select a project</option>
+                <option value="">Select a portfolio</option>
                 {projects.map((project: any) => (
                   <option key={project.id} value={project.id}>
                     {project.name}

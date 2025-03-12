@@ -177,7 +177,14 @@ export default function DocumentsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <DocumentIcon className="h-5 w-5 text-[#3a67c4] mr-3 flex-shrink-0" />
-                        <div className="text-sm font-medium text-gray-900">{doc.name}</div>
+                        <Link 
+                          href={getDocumentUrl(doc.url)} 
+                          className="text-sm font-medium text-gray-900 hover:text-[#3a67c4] hover:underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {doc.name}
+                        </Link>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

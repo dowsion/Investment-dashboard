@@ -235,6 +235,11 @@ export default function EditPortfolioPage() {
       const newFiles = [...files];
       newFiles[index] = e.target.files[0];
       setFiles(newFiles);
+      
+      // 使用文件名作为文档标题
+      const newTitles = [...documentTitles];
+      newTitles[index] = e.target.files[0].name;
+      setDocumentTitles(newTitles);
     }
   };
 
@@ -561,22 +566,7 @@ export default function EditPortfolioPage() {
                     </button>
                   </div>
                   
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-gray-700 font-bold mb-2" htmlFor={`document-title-${index}`}>
-                        Document Title <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id={`document-title-${index}`}
-                        value={documentTitles[index] || ''}
-                        onChange={(e) => handleDocumentTitleChange(e, index)}
-                        required
-                        className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
-                        placeholder="Enter document title"
-                      />
-                    </div>
-                    
+                  <div className="grid grid-cols-1 xl:grid-cols-1 gap-4">
                     <div>
                       <label className="block text-gray-700 font-bold mb-2" htmlFor={`document-type-${index}`}>
                         Document Type <span className="text-red-500">*</span>
@@ -599,20 +589,37 @@ export default function EditPortfolioPage() {
                       </select>
                     </div>
                     
-                    <div className="xl:col-span-2">
+                    <div>
                       <label className="block text-gray-700 font-bold mb-2" htmlFor={`file-${index}`}>
                         File <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="file"
-                        id={`file-${index}`}
-                        onChange={(e) => handleFileChange(e, index)}
-                        required
-                        className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
-                      />
+                      {!file ? (
+                        <input
+                          type="file"
+                          id={`file-${index}`}
+                          onChange={(e) => handleFileChange(e, index)}
+                          required
+                          className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-between shadow-sm border border-gray-300 rounded-md p-3">
+                          <span className="text-gray-700 truncate max-w-[80%]">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newFiles = [...files];
+                              newFiles[index] = null as unknown as File;
+                              setFiles(newFiles);
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      )}
                       {file && (
                         <p className="mt-1 text-sm text-gray-500">
-                          Selected file: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                          File size: {(file.size / 1024).toFixed(2)} KB
                         </p>
                       )}
                     </div>
