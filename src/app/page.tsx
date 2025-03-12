@@ -34,7 +34,7 @@ export default async function Dashboard() {
   return (
     <main className="container mx-auto px-4 py-8">
       {/* 页面标题 */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Investment Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Investment Overview</h1>
       
       {/* 统计卡片区域 - 改为响应式Grid布局 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -45,7 +45,7 @@ export default async function Dashboard() {
               <DollarSignIcon className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Total Invested</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Investment Amount</p>
               <p className="text-lg font-semibold">${totalInvested.toLocaleString()}</p>
             </div>
           </div>
@@ -58,7 +58,7 @@ export default async function Dashboard() {
               <LayersIcon className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Book Value</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">Fund Book Value</p>
               <p className="text-lg font-semibold">${totalBookValue.toLocaleString()}</p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default async function Dashboard() {
               <TrendingUpIcon className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Overall MOIC</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">MOIC</p>
               <p className="text-lg font-semibold">{overallMoic.toFixed(2)}x</p>
             </div>
           </div>

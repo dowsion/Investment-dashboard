@@ -35,7 +35,7 @@ const Navbar = () => {
                 : ""
             }`}
           >
-            Dashboard
+            Overview
           </Link>
           <Link 
             href="/portfolio" 

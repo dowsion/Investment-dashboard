@@ -181,9 +181,9 @@ export default async function PortfolioDetailPage({
         
         {/* Portfolio Status */}
         <div className="bg-white p-4 md:p-6 rounded-lg shadow">
-          <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Portfolio Status</h2>
+          <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Portfolio Performance</h2>
           <p className="text-sm md:text-base text-gray-700 whitespace-pre-line">
-            {portfolio.portfolioStatus || 'Current portfolio status information is not available.'}
+            {portfolio.portfolioStatus || 'Current portfolio performance information is not available.'}
           </p>
         </div>
       </div>

@@ -58,7 +58,7 @@ export default async function PortfolioPage() {
               <DollarSignIcon className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Total Invested</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Investment Amount</p>
               <p className="text-lg font-semibold">${totalInvested.toLocaleString()}</p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default async function PortfolioPage() {
               <LayersIcon className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Book Value</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">Fund Book Value</p>
               <p className="text-lg font-semibold">${totalBookValue.toLocaleString()}</p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default async function PortfolioPage() {
               <TrendingUpIcon className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Overall MOIC</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">MOIC</p>
               <p className="text-lg font-semibold">{overallMoic.toFixed(2)}x</p>
             </div>
           </div>

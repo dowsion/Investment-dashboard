@@ -24,8 +24,8 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: "Starting Gate Dashboard",
-  description: "Create and customize user and team-specific dashboards with support from StartingGate's Customer Success Team",
+  title: "Starting Gate Fund I, Dashboard",
+  description: "Looking for new global entrepreneurs, we are an innovative fund that focuses on Early-stage AI investment, headquartered in Silicon Valley.",
 };
 
 export default function RootLayout({
@@ -41,8 +41,8 @@ export default function RootLayout({
             <div className="container mx-auto max-w-full xl:max-w-[1400px] 2xl:max-w-[1600px]">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
                 <div className="max-w-3xl pr-0 md:pr-24">
-                  <h1 className="dashboard-title text-2xl md:text-3xl lg:text-4xl font-bold mb-0 md:mb-2">Starting Gate Dashboard</h1>
-                  <p className="dashboard-subtitle text-sm md:text-base text-gray-300">Create and customize user and team-specific dashboards with support from StartingGate's Customer Success Team.</p>
+                  <h1 className="dashboard-title text-2xl md:text-3xl lg:text-4xl font-bold mb-0 md:mb-2">Starting Gate Fund I, Dashboard</h1>
+                  <p className="dashboard-subtitle text-sm md:text-base text-gray-300">Looking for new global entrepreneurs, we are an innovative fund that focuses on Early-stage AI investment, headquartered in Silicon Valley.</p>
                 </div>
                 <div className="logo-container text-2xl font-display font-semibold text-white opacity-90 mt-4 md:mt-0">
                   StartingGate
