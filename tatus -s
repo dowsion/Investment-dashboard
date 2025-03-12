@@ -1,0 +1,218 @@
+warning: in the working copy of 'src/app/api/projects/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/portfolio/[id]/edit/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/portfolio/[id]/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/ProjectList.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/app/api/projects/[id]/route.ts b/src/app/api/projects/[id]/route.ts[m
+[1mindex 5b0dd50..13e95e0 100644[m
+[1m--- a/src/app/api/projects/[id]/route.ts[m
+[1m+++ b/src/app/api/projects/[id]/route.ts[m
+[36m@@ -1,78 +1,73 @@[m
+ import { NextRequest, NextResponse } from 'next/server';[m
+[31m-import prisma from '@/lib/prisma';[m
+[32m+[m[32mimport { PrismaClient } from '@prisma/client';[m
+ [m
+[31m-// Disable caching for API routes[m
+[31m-export const dynamic = 'force-dynamic';[m
+[31m-export const revalidate = 0;[m
+[32m+[m[32mconst prisma = new PrismaClient();[m
+ [m
+[31m-// 验证管理员身份的函数[m
+[31m-const verifyAdmin = (request: NextRequest) => {[m
+[31m-  const adminAuth = request.headers.get('X-Admin-Auth');[m
+[31m-  const adminToken = request.headers.get('X-Admin-Token');[m
+[31m-  [m
+[31m-  return adminAuth === 'true' && adminToken;[m
+[31m-};[m
+[31m-[m
+[31m-// GET a single portfolio by ID[m
+ export async function GET([m
+   request: NextRequest,[m
+   { params }: { params: { id: string } }[m
+ ) {[m
+   try {[m
+[31m-    const id = params.id;[m
+[32m+[m[32m    // Extract the id from params[m
+[32m+[m[32m    const { id } = params;[m
+     [m
+     const project = await prisma.project.findUnique({[m
+[31m-      where: { id },[m
+[32m+[m[32m      where: {[m
+[32m+[m[32m        id,[m
+[32m+[m[32m      },[m
+       include: {[m
+[31m-        documents: true[m
+[31m-      }[m
+[32m+[m[32m        documents: true,[m
+[32m+[m[32m      },[m
+     });[m
+[31m-    [m
+[32m+[m
+     if (!project) {[m
+       return NextResponse.json([m
+[31m-        { error: 'Portfolio not found' },[m
+[32m+[m[32m        { error: 'Project not found' },[m
+         { status: 404 }[m
+       );[m
+     }[m
+[31m-    [m
+[32m+[m
+     return NextResponse.json(project);[m
+   } catch (error) {[m
+[31m-    console.error('Error:', error);[m
+[32m+[m[32m    console.error('Error fetching project:', error);[m
+     return NextResponse.json([m
+[31m-      { error: 'An error occurred while fetching the portfolio' },[m
+[32m+[m[32m      { error: 'Failed to fetch project' },[m
+       { status: 500 }[m
+     );[m
+   }[m
+ }[m
+ [m
+[31m-// UPDATE portfolio[m
+ export async function PUT([m
+   request: NextRequest,[m
+   { params }: { params: { id: string } }[m
+ ) {[m
+   try {[m
+[31m-    // 验证管理员身份[m
+[31m-    if (!verifyAdmin(request)) {[m
+[32m+[m[32m    // Extract the id from params[m
+[32m+[m[32m    const { id } = params;[m
+[32m+[m[32m    const data = await request.json();[m
+[32m+[m
+[32m+[m[32m    // Validate required fields[m
+[32m+[m[32m    if (!data.name || !data.investmentDate || data.capitalInvested === undefined) {[m
+       return NextResponse.json([m
+[31m-        { error: 'Unauthorized - Only administrators can update portfolios' },[m
+[31m-        { status: 403 }[m
+[32m+[m[32m        { error: 'Missing required fields' },[m
+[32m+[m[32m        { status: 400 }[m
+       );[m
+     }[m
+[31m-    [m
+[31m-    const id = params.id;[m
+[31m-    const data = await request.json();[m
+[31m-    [m
+[32m+[m
+[32m+[m[32m    // Check if project exists[m
+     const existingProject = await prisma.project.findUnique({[m
+[31m-      where: { id },[m
+[32m+[m[32m      where: {[m
+[32m+[m[32m        id,[m
+[32m+[m[32m      },[m
+     });[m
+[31m-    [m
+[32m+[m
+     if (!existingProject) {[m
+       return NextResponse.json([m
+[31m-        { error: 'Portfolio not found' },[m
+[32m+[m[32m        { error: 'Project not found' },[m
+         { status: 404 }[m
+       );[m
+     }[m
+[31m-    [m
+[32m+[m
+     // Update the project with new data[m
+     const updatedProject = await prisma.project.update({[m
+       where: { id },[m
+[36m@@ -86,59 +81,65 @@[m [mexport async function PUT([m
+         currentShareholdingRatio: data.currentShareholdingRatio,[m
+         investmentCost: data.investmentCost,[m
+         latestFinancingValuation: data.latestFinancingValuation,[m
+[31m-        bookValue: data.bookValue,[m
+[32m+[m[32m        // 计算Book Value: Latest Financing Valuation * Current Shareholding Ratio[m
+[32m+[m[32m        bookValue: data.latestFinancingValuation && data.currentShareholdingRatio[m[41m [m
+[32m+[m[32m          ? data.latestFinancingValuation * (data.currentShareholdingRatio / 100)[m
+[32m+[m[32m          : data.bookValue,[m
+         moic: data.moic,[m
+       },[m
+     });[m
+[31m-    [m
+[32m+[m
+     return NextResponse.json(updatedProject);[m
+   } catch (error) {[m
+[31m-    console.error('Error updating portfolio:', error);[m
+[32m+[m[32m    console.error('Error updating project:', error);[m
+     return NextResponse.json([m
+[31m-      { error: 'Failed to update portfolio' },[m
+[32m+[m[32m      { error: 'Failed to update project' },[m
+       { status: 500 }[m
+     );[m
+   }[m
+ }[m
+ [m
+[31m-// DELETE portfolio[m
+ export async function DELETE([m
+   request: NextRequest,[m
+   { params }: { params: { id: string } }[m
+ ) {[m
+   try {[m
+[31m-    // 验证管理员身份[m
+[31m-    if (!verifyAdmin(request)) {[m
+[31m-      return NextResponse.json([m
+[31m-        { error: 'Unauthorized - Only administrators can delete portfolios' },[m
+[31m-        { status: 403 }[m
+[31m-      );[m
+[31m-    }[m
+[32m+[m[32m    // Extract the id from params[m
+[32m+[m[32m    const { id } = params;[m
+     [m
+[31m-    const id = params.id;[m
+[31m-    [m
+[31m-    // Check if the project exists[m
+[32m+[m[32m    // Check if project exists[m
+     const existingProject = await prisma.project.findUnique({[m
+[31m-      where: { id },[m
+[32m+[m[32m      where: {[m
+[32m+[m[32m        id,[m
+[32m+[m[32m      },[m
+     });[m
+[31m-    [m
+[32m+[m
+     if (!existingProject) {[m
+       return NextResponse.json([m
+[31m-        { error: 'Portfolio not found' },[m
+[32m+[m[32m        { error: 'Project not found' },[m
+         { status: 404 }[m
+       );[m
+     }[m
+[31m-    [m
+[32m+[m
+[32m+[m[32m    // Delete all documents associated with the project[m
+[32m+[m[32m    await prisma.document.deleteMany({[m
+[32m+[m[32m      where: {[m
+[32m+[m[32m        projectId: id,[m
+[32m+[m[32m      },[m
+[32m+[m[32m    });[m
+[32m+[m
+     // Delete the project[m
+     await prisma.project.delete({[m
+[31m-      where: { id },[m
+[32m+[m[32m      where: {[m
+[32m+[m[32m        id,[m
+[32m+[m[32m      },[m
+     });[m
+[31m-    [m
+[32m+[m
+     return NextResponse.json({ success: true });[m
+   } catch (error) {[m
+[31m-    console.error('Error deleting portfolio:', error);[m
+[32m+[m[32m    console.error('Error deleting project:', error);[m
+     return NextResponse.json([m
+[31m-      { error: 'Failed to delete portfolio' },[m
+[32m+[m[32m      { error: 'Failed to delete project' },[m
+       { status: 500 }[m
+     );[m
+   }[m
+[1mdiff --git a/src/app/api/projects/route.ts b/src/app/api/projects/route.ts[m
+[1mindex 6921683..302e380 100644[m
+[1m--- a/src/app/api/projects/route.ts[m
+[1m+++ b/src/app/api/projects/route.ts[m
+[36m@@ -37,14 +37,18 @@[m [mexport async function POST(request: NextRequest) {[m
+       data: {[m
+         name: data.name,[m
+         briefIntro: data.briefIntro,[m
+[31m-        portfolioStatus: data.portfolioStatus,[m
+[32m+[m[32m        // 安全处理portfolioStatus字段，如果出现问题则不传入此字段[m
+[32m+[m[32m        ...(data.po

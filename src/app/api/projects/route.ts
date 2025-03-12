@@ -37,14 +37,18 @@ export async function POST(request: NextRequest) {
       data: {
         name: data.name,
         briefIntro: data.briefIntro,
-        portfolioStatus: data.portfolioStatus,
+        // 安全处理portfolioStatus字段，如果出现问题则不传入此字段
+        ...(data.portfolioStatus !== undefined ? { portfolioStatus: data.portfolioStatus } : {}),
         investmentDate: new Date(data.investmentDate),
         capitalInvested: data.capitalInvested,
         initialShareholdingRatio: data.initialShareholdingRatio,
         currentShareholdingRatio: data.currentShareholdingRatio,
         investmentCost: data.investmentCost,
         latestFinancingValuation: data.latestFinancingValuation,
-        bookValue: data.bookValue,
+        // 计算Book Value: Latest Financing Valuation * Current Shareholding Ratio
+        bookValue: data.latestFinancingValuation && data.currentShareholdingRatio 
+          ? data.latestFinancingValuation * (data.currentShareholdingRatio / 100)
+          : data.bookValue,
         moic: data.moic,
       },
     });

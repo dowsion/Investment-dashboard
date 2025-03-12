@@ -137,7 +137,10 @@ export default function EditPortfolioPage() {
         currentShareholdingRatio: formData.currentShareholdingRatio ? parseFloat(formData.currentShareholdingRatio) : null,
         investmentCost: formData.investmentCost ? parseFloat(formData.investmentCost) : null,
         latestFinancingValuation: formData.latestFinancingValuation ? parseFloat(formData.latestFinancingValuation) : null,
-        bookValue: formData.bookValue ? parseFloat(formData.bookValue) : null,
+        // 计算Book Value: Latest Financing Valuation * Current Shareholding Ratio
+        bookValue: formData.latestFinancingValuation && formData.currentShareholdingRatio 
+          ? parseFloat(formData.latestFinancingValuation) * (parseFloat(formData.currentShareholdingRatio) / 100)
+          : (formData.bookValue ? parseFloat(formData.bookValue) : null),
         moic: formData.moic ? parseFloat(formData.moic) : null,
       };
 

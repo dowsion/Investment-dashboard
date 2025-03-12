@@ -2,17 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
-import { 
-  DocumentTextIcon,
-  DocumentChartBarIcon, 
-  ClipboardDocumentCheckIcon, 
-  MagnifyingGlassCircleIcon,
-  DocumentIcon,
-  BanknotesIcon,
-  ReceiptRefundIcon,
-  InformationCircleIcon,
-  DocumentDuplicateIcon 
-} from '@heroicons/react/24/outline';
+import { DocumentTextIcon, DocumentChartBarIcon, ClipboardDocumentCheckIcon, MagnifyingGlassCircleIcon, DocumentIcon, BanknotesIcon, ReceiptRefundIcon, InformationCircleIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 
 const prisma = new PrismaClient();
 
@@ -40,22 +30,10 @@ const documentIconMap: Record<string, any> = {
   'other': DocumentDuplicateIcon
 };
 
-// 文档类型排序顺序 - 调整为与图片一致的顺序
-const typeOrder = [
-  'business_plan',
-  'investment_committee',
-  'due_diligence',
-  'contract',
-  'payment_proof',
-  'receipt',
-  'general',
-  'other'
-];
-
 // 根据文档URL获取可靠的访问URL
 function getDocumentUrl(originalUrl: string) {
   // 如果URL以/uploads/开头，转换为API路由
-  if (originalUrl.startsWith('/uploads/')) {
+  if (originalUrl && originalUrl.startsWith('/uploads/')) {
     const filename = originalUrl.replace('/uploads/', '');
     return `/api/files/${filename}`;
   }
@@ -67,14 +45,7 @@ async function getProject(id: string) {
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        documents: {
-          where: {
-            isVisible: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          }
-        }
+        documents: true
       }
     });
     
@@ -92,51 +63,38 @@ export default async function PortfolioDetailPage({
 }) {
   // Use the id from params in a type-safe way
   const { id } = params;
-  const portfolio = await getProject(id);
+  const project = await getProject(id);
   
-  if (!portfolio) {
+  if (!project) {
     notFound();
   }
 
   // Calculate values using the correct formulas
-  const bookValue = portfolio.latestFinancingValuation && portfolio.currentShareholdingRatio
-    ? portfolio.latestFinancingValuation * (portfolio.currentShareholdingRatio / 100)
-    : portfolio.bookValue;
+  // Book Value = Latest Financing Valuation * Current Shareholding Ratio
+  const bookValue = project.latestFinancingValuation && project.currentShareholdingRatio
+    ? project.latestFinancingValuation * (project.currentShareholdingRatio / 100)
+    : project.bookValue || 0;
     
-  const moic = portfolio.investmentCost && portfolio.investmentCost > 0 && bookValue
-    ? bookValue / portfolio.investmentCost
-    : portfolio.moic;
+  const moic = project.investmentCost && project.investmentCost > 0 && bookValue
+    ? bookValue / project.investmentCost
+    : project.moic || 0;
 
   // Format date in YYYY/MM/DD format
   const formatDate = (date: Date | string): string => {
     return format(new Date(date), 'yyyy/MM/dd');
   };
 
-  // 按类型对文档分组
-  const documentsByType: Record<string, any[]> = {};
-  
-  // 将文档按类型分组
-  if (portfolio.documents && portfolio.documents.length > 0) {
-    portfolio.documents.forEach((doc: any) => {
-      const type = doc.type || 'other';
-      if (!documentsByType[type]) {
-        documentsByType[type] = [];
-      }
-      documentsByType[type].push(doc);
-    });
-  }
-
   return (
     <div className="container mx-auto px-4 py-4 md:py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-4 sm:mb-0">{portfolio.name}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 sm:mb-0">{project.name}</h1>
       </div>
       
       {/* Portfolio Introduction */}
       <div className="bg-white p-4 md:p-6 rounded-lg shadow mb-4 md:mb-8">
         <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Portfolio Introduction</h2>
         <p className="text-sm md:text-base text-gray-700 whitespace-pre-line">
-          {portfolio.briefIntro || 'No portfolio introduction available.'}
+          {project.briefIntro || 'No portfolio introduction available.'}
         </p>
       </div>
       
@@ -144,46 +102,46 @@ export default async function PortfolioDetailPage({
         {/* Transaction Process */}
         <div className="bg-white p-4 md:p-6 rounded-lg shadow">
           <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Transaction Process</h2>
-          
-          {!portfolio.documents || portfolio.documents.length === 0 ? (
-            <p className="text-gray-500">No documents available for this portfolio.</p>
-          ) : (
-            <div className="space-y-4">
-              {/* 按照指定顺序显示文档类型及文件 */}
-              {typeOrder.map(type => {
-                if (!documentsByType[type] || documentsByType[type].length === 0) return null;
-                
-                // 取该类型的首个文档显示
-                const doc = documentsByType[type][0];
-                // 获取对应类型的图标组件
+          <div className="space-y-3">
+            {project.documents && project.documents.length > 0 ? (
+              project.documents.map((doc: any) => {
+                const type = doc.type || 'other';
                 const IconComponent = documentIconMap[type] || DocumentTextIcon;
                 
+                // 获取文件名
+                let fileName = '';
+                if (doc.url && doc.url.includes('/')) {
+                  fileName = doc.url.split('/').pop() || '';
+                }
+                
                 return (
-                  <div key={type} className="border-b pb-3 mb-3 last:border-b-0">
-                    <Link
+                  <div key={doc.id} className="p-2 md:p-3 border rounded">
+                    <Link 
                       href={getDocumentUrl(doc.url)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block hover:bg-gray-50 transition-colors"
+                      className="flex items-center hover:bg-gray-50 transition-colors"
                     >
-                      <div className="text-sm md:text-base flex items-center">
-                        <IconComponent className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
-                        <span className="font-medium">{documentTypeMap[type]}: </span>
-                        <span className="text-blue-600 ml-1">{doc.name}</span>
+                      <IconComponent className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
+                      <div>
+                        <span className="font-medium">{documentTypeMap[type]}</span>
+                        {fileName && <span className="text-gray-600 ml-1">: {fileName}</span>}
                       </div>
                     </Link>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            ) : (
+              <p className="text-gray-500">No documents available for this portfolio.</p>
+            )}
+          </div>
         </div>
         
-        {/* Portfolio Status */}
+        {/* Portfolio Performance */}
         <div className="bg-white p-4 md:p-6 rounded-lg shadow">
           <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Portfolio Performance</h2>
           <p className="text-sm md:text-base text-gray-700 whitespace-pre-line">
-            {portfolio.portfolioStatus || 'Current portfolio performance information is not available.'}
+            {project.portfolioStatus || 'Current portfolio performance information is not available.'}
           </p>
         </div>
       </div>

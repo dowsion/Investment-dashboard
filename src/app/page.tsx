@@ -14,7 +14,6 @@ export default async function Dashboard() {
   // Calculate aggregated investment statistics
   const aggregatedStats = await prisma.project.aggregate({
     _sum: {
-      capitalInvested: true,
       investmentCost: true,
       bookValue: true,
     },
@@ -24,11 +23,14 @@ export default async function Dashboard() {
   });
 
   // Extract values or default to 0 if null
-  const totalInvested = aggregatedStats._sum.capitalInvested || aggregatedStats._sum.investmentCost || 0;
+  // Fund Book Value = 所有Portfolio的Book Value的总和
   const totalBookValue = aggregatedStats._sum.bookValue || 0;
+  // Total Investment Amount = 所有Portfolio的Actual Investment Amount的总和
+  const totalInvested = aggregatedStats._sum.investmentCost || 0;
   const projectCount = aggregatedStats._count.id || 0;
 
   // Calculate overall MOIC if total invested > 0
+  // MOIC = Fund Book Value / Total Investment Amount
   const overallMoic = totalInvested > 0 ? totalBookValue / totalInvested : 0;
 
   return (

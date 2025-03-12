@@ -66,7 +66,8 @@ const ProjectList = ({ projects, enableSorting = true, variant = 'portfolio' }: 
 
   // Function to calculate MOIC based on the formula: Book Value / Investment Cost
   const calculateMoic = (project: Project, bookValue: number | null): number | null => {
-    const actualInvestmentAmount = project.investmentCost || project.capitalInvested;
+    // 使用investmentCost作为实际投资金额(Actual Investment Amount)
+    const actualInvestmentAmount = project.investmentCost;
     if (bookValue && actualInvestmentAmount && actualInvestmentAmount > 0) {
       return bookValue / actualInvestmentAmount;
     }
