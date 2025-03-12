@@ -16,6 +16,7 @@ export default function UploadDocumentPage() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [documentType, setDocumentType] = useState('');
   
   // Fetch projects for dropdown
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function UploadDocumentPage() {
     formData.append('projectId', projectId);
     formData.append('title', title);
     formData.append('description', description);
+    formData.append('type', documentType);
     
     try {
       const response = await fetch('/api/documents', {
@@ -80,6 +82,7 @@ export default function UploadDocumentPage() {
         setTitle('');
         setDescription('');
         setProjectId('');
+        setDocumentType('');
         
         // Redirect after success
         setTimeout(() => {
@@ -159,6 +162,29 @@ export default function UploadDocumentPage() {
                 placeholder="Enter document title"
                 required
               />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 font-bold mb-2" htmlFor="type">
+                Document Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="type"
+                value={documentType}
+                onChange={(e) => setDocumentType(e.target.value)}
+                className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                required
+              >
+                <option value="">Select document type</option>
+                <option value="business_plan">Business Plan</option>
+                <option value="investment_committee">Investment Committee Records</option>
+                <option value="due_diligence">Due Diligence Report</option>
+                <option value="contract">Investment Agreement</option>
+                <option value="payment_proof">Proof of Payment</option>
+                <option value="receipt">Payment Receipt</option>
+                <option value="general">General Disclosure Document</option>
+                <option value="other">Other</option>
+              </select>
             </div>
             
             <div>

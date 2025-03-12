@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
@@ -68,8 +68,9 @@ export async function POST(request: NextRequest) {
       // 确保上传目录存在
       const uploadDir = await ensureUploadDirExists();
       
-      // 生成唯一文件名
-      const uniqueFilename = `${uuidv4()}-${file.name}`;
+      // 生成安全的文件名（避免特殊字符）
+      const originalFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const uniqueFilename = `${uuidv4()}-${originalFileName}`;
       const filePath = join(uploadDir, uniqueFilename);
       
       console.log('Saving file to:', filePath);
@@ -89,13 +90,18 @@ export async function POST(request: NextRequest) {
         );
       }
       
+      // 创建正确的URL路径
+      const publicUrl = `/uploads/${uniqueFilename}`;
+      
+      console.log('Created public URL:', publicUrl);
+      
       // 创建文档记录
       console.log('Creating document record in database');
       const document = await prisma.document.create({
         data: {
           name,
           type,
-          url: `/uploads/${uniqueFilename}`,
+          url: publicUrl,
           projectId,
           description: description || null,
           isVisible: true,
@@ -202,6 +208,66 @@ export async function PATCH(request: NextRequest) {
     console.error('Error updating document visibility:', error);
     return NextResponse.json(
       { error: 'Failed to update document visibility' },
+      { status: 500 }
+    );
+  }
+}
+
+// 添加删除文档的API
+export async function DELETE(request: NextRequest) {
+  try {
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Document ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // 查找文档记录
+    const document = await prisma.document.findUnique({
+      where: { id }
+    });
+    
+    if (!document) {
+      return NextResponse.json(
+        { error: 'Document not found' },
+        { status: 404 }
+      );
+    }
+    
+    // 尝试删除实际文件
+    try {
+      if (document.url) {
+        // 从URL提取文件名
+        const filename = document.url.split('/').pop();
+        if (filename) {
+          const filePath = join(process.cwd(), 'public', 'uploads', filename);
+          
+          // 检查文件是否存在
+          if (fs.existsSync(filePath)) {
+            await unlink(filePath);
+            console.log('Deleted file:', filePath);
+          }
+        }
+      }
+    } catch (fileError) {
+      console.error('Error deleting file:', fileError);
+      // 继续删除数据库记录，即使文件删除失败
+    }
+    
+    // 删除数据库记录
+    await prisma.document.delete({
+      where: { id }
+    });
+    
+    return NextResponse.json({ success: true, message: 'Document deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete document' },
       { status: 500 }
     );
   }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DocumentTextIcon, EyeIcon, EyeSlashIcon, ArrowDownTrayIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { DocumentTextIcon, EyeIcon, EyeSlashIcon, ArrowDownTrayIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
 import AuthCheck from '@/components/AuthCheck';
 
 // 定义文档类型
@@ -25,6 +25,7 @@ export default function AdminDocuments() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   
   useEffect(() => {
     fetchDocuments();
@@ -75,6 +76,48 @@ export default function AdminDocuments() {
       console.error('Error updating document visibility:', err);
       alert('An error occurred while updating the document.');
     }
+  };
+  
+  const deleteDocument = async (id: string, name: string) => {
+    // 确认删除
+    if (!confirm(`确定要删除文档 "${name}" 吗？此操作不可撤销。`)) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/documents?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Auth': 'true',
+          'X-Admin-Token': localStorage.getItem('adminAuthenticated') || ''
+        }
+      });
+      
+      if (response.ok) {
+        // 从本地状态中移除文档
+        setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== id));
+        alert('文档已成功删除');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除文档失败');
+      }
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      alert('删除文档时发生错误');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  
+  // 根据文档URL获取可靠的访问URL
+  const getDocumentUrl = (originalUrl: string) => {
+    // 如果URL以/uploads/开头，转换为API路由
+    if (originalUrl.startsWith('/uploads/')) {
+      const filename = originalUrl.replace('/uploads/', '');
+      return `/api/files/${filename}`;
+    }
+    return originalUrl;
   };
   
   return (
@@ -198,27 +241,37 @@ export default function AdminDocuments() {
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {doc.url && (
-                        <div className="flex justify-end space-x-2">
-                          <Link 
-                            href={doc.url} 
-                            className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <EyeIcon className="h-4 w-4 mr-1" />
-                            <span>View</span>
-                          </Link>
-                          <Link 
-                            href={doc.url} 
-                            className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"
-                            download
-                          >
-                            <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-                            <span>Download</span>
-                          </Link>
-                        </div>
-                      )}
+                      <div className="flex justify-end space-x-2">
+                        {doc.url && (
+                          <>
+                            <Link 
+                              href={getDocumentUrl(doc.url)} 
+                              className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <EyeIcon className="h-4 w-4 mr-1" />
+                              <span>View</span>
+                            </Link>
+                            <Link 
+                              href={getDocumentUrl(doc.url)} 
+                              className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"
+                              download={doc.name || true}
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                              <span>Download</span>
+                            </Link>
+                            <button
+                              onClick={() => deleteDocument(doc.id, doc.name)}
+                              disabled={isDeleting}
+                              className="text-red-600 hover:text-red-800 inline-flex items-center"
+                            >
+                              <TrashIcon className="h-4 w-4 mr-1" />
+                              <span>Delete</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
