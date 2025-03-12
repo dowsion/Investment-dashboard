@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthCheck from '@/components/AuthCheck';
+import { DocumentIcon, DocumentPlusIcon } from '@heroicons/react/24/outline';
 
 export default function EditPortfolioPage() {
   const router = useRouter();
@@ -13,6 +14,10 @@ export default function EditPortfolioPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  
   const [formData, setFormData] = useState({
     name: '',
     briefIntro: '',
@@ -28,6 +33,10 @@ export default function EditPortfolioPage() {
 
   const [calculatedBookValue, setCalculatedBookValue] = useState<string | null>(null);
   const [calculatedMoic, setCalculatedMoic] = useState<string | null>(null);
+
+  const [files, setFiles] = useState<File[]>([]);
+  const [documentTitles, setDocumentTitles] = useState<string[]>([]);
+  const [documentTypes, setDocumentTypes] = useState<string[]>([]);
 
   // Fetch project data
   useEffect(() => {
@@ -133,6 +142,8 @@ export default function EditPortfolioPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Auth': 'true',
+          'X-Admin-Token': localStorage.getItem('adminAuthenticated') || ''
         },
         body: JSON.stringify(portfolioData),
       });
@@ -149,6 +160,108 @@ export default function EditPortfolioPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // 单独处理文件上传
+  const handleUploadFiles = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (files.length === 0) {
+      setUploadError('Please add at least one document to upload');
+      return;
+    }
+    
+    setIsUploadingFiles(true);
+    setUploadError('');
+    
+    try {
+      // Upload files
+      const uploadPromises = files.map(async (file, index) => {
+        if (!file) return null;
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('projectId', id);
+        formData.append('name', documentTitles[index] || file.name);
+        formData.append('type', documentTypes[index]);
+        
+        const response = await fetch('/api/documents', {
+          method: 'POST',
+          headers: {
+            'X-Admin-Auth': 'true',
+            'X-Admin-Token': localStorage.getItem('adminAuthenticated') || ''
+          },
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to upload document: ${file.name}`);
+        }
+        
+        return response.json();
+      });
+      
+      // Wait for all file uploads to complete
+      await Promise.all(uploadPromises);
+      
+      // Success feedback
+      setUploadSuccess(true);
+      setFiles([]);
+      setDocumentTitles([]);
+      setDocumentTypes([]);
+      
+      // Hide success message after a few seconds
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      setUploadError('Failed to upload one or more documents. Please try again.');
+    } finally {
+      setIsUploadingFiles(false);
+    }
+  };
+
+  // Add file handling functions
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    if (e.target.files && e.target.files[0]) {
+      const newFiles = [...files];
+      newFiles[index] = e.target.files[0];
+      setFiles(newFiles);
+    }
+  };
+
+  const handleDocumentTitleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const newTitles = [...documentTitles];
+    newTitles[index] = e.target.value;
+    setDocumentTitles(newTitles);
+  };
+
+  const handleDocumentTypeChange = (e: React.ChangeEvent<HTMLSelectElement>, index: number) => {
+    const newTypes = [...documentTypes];
+    newTypes[index] = e.target.value;
+    setDocumentTypes(newTypes);
+  };
+
+  const addFileInput = () => {
+    setFiles([...files, null as unknown as File]);
+    setDocumentTitles([...documentTitles, '']);
+    setDocumentTypes([...documentTypes, 'business_plan']);
+  };
+
+  const removeFileInput = (index: number) => {
+    const newFiles = [...files];
+    const newTitles = [...documentTitles];
+    const newTypes = [...documentTypes];
+    
+    newFiles.splice(index, 1);
+    newTitles.splice(index, 1);
+    newTypes.splice(index, 1);
+    
+    setFiles(newFiles);
+    setDocumentTitles(newTitles);
+    setDocumentTypes(newTypes);
   };
 
   if (isLoading) {
@@ -182,7 +295,8 @@ export default function EditPortfolioPage() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white p-6 rounded-lg shadow-md overflow-hidden mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Portfolio Information</h2>
         <form onSubmit={handleSubmit} className="w-full">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-6">
             <div className="col-span-2">
@@ -369,11 +483,136 @@ export default function EditPortfolioPage() {
                   disabled={isSubmitting}
                   className="bg-[#3a67c4] hover:bg-[#5e82d2] text-white font-medium py-3 px-6 rounded"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  {isSubmitting ? 'Saving...' : 'Save Portfolio Changes'}
                 </button>
               </div>
             </div>
           </div>
+        </form>
+      </div>
+
+      {/* 文件上传区域 - 使用单独的表单 */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Document Upload</h2>
+        
+        {/* 上传成功提示 */}
+        {uploadSuccess && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6">
+            Documents uploaded successfully!
+          </div>
+        )}
+        
+        {/* 上传错误提示 */}
+        {uploadError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+            {uploadError}
+          </div>
+        )}
+        
+        <form onSubmit={handleUploadFiles}>
+          <div className="mb-4 flex justify-end">
+            <button 
+              type="button" 
+              onClick={addFileInput}
+              className="bg-[#3a67c4] hover:bg-[#5e82d2] text-white font-medium py-2 px-4 rounded inline-flex items-center"
+            >
+              <DocumentPlusIcon className="h-5 w-5 mr-2" />
+              Add Document
+            </button>
+          </div>
+          
+          {files.length === 0 ? (
+            <div className="bg-gray-50 p-6 text-center rounded-lg border border-dashed border-gray-300 mb-6">
+              <DocumentIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+              <p className="text-gray-500">Click "Add Document" to upload files related to this portfolio</p>
+            </div>
+          ) : (
+            <div className="space-y-6 mb-6">
+              {files.map((file, index) => (
+                <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-medium text-gray-800">Document #{index + 1}</h3>
+                    <button 
+                      type="button" 
+                      onClick={() => removeFileInput(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-700 font-bold mb-2" htmlFor={`document-title-${index}`}>
+                        Document Title <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id={`document-title-${index}`}
+                        value={documentTitles[index] || ''}
+                        onChange={(e) => handleDocumentTitleChange(e, index)}
+                        required
+                        className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                        placeholder="Enter document title"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-700 font-bold mb-2" htmlFor={`document-type-${index}`}>
+                        Document Type <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id={`document-type-${index}`}
+                        value={documentTypes[index] || 'business_plan'}
+                        onChange={(e) => handleDocumentTypeChange(e, index)}
+                        required
+                        className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                      >
+                        <option value="business_plan">Business Plan</option>
+                        <option value="investment_committee">Investment Committee Records</option>
+                        <option value="due_diligence">Due Diligence Report</option>
+                        <option value="contract">Investment Agreement</option>
+                        <option value="payment_proof">Proof of Payment</option>
+                        <option value="receipt">Payment Receipt</option>
+                        <option value="general">General Disclosure Document</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    
+                    <div className="xl:col-span-2">
+                      <label className="block text-gray-700 font-bold mb-2" htmlFor={`file-${index}`}>
+                        File <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        id={`file-${index}`}
+                        onChange={(e) => handleFileChange(e, index)}
+                        required
+                        className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
+                      />
+                      {file && (
+                        <p className="mt-1 text-sm text-gray-500">
+                          Selected file: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {files.length > 0 && (
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isUploadingFiles}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded"
+              >
+                {isUploadingFiles ? 'Uploading...' : 'Upload Documents'}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 
+// 确保上传目录存在
+async function ensureUploadDirExists() {
+  const uploadDir = join(process.cwd(), 'public', 'uploads');
+  try {
+    // 检查目录是否存在
+    if (!fs.existsSync(uploadDir)) {
+      console.log('Creating upload directory:', uploadDir);
+      await mkdir(uploadDir, { recursive: true });
+    }
+    return uploadDir;
+  } catch (error) {
+    console.error('Error creating upload directory:', error);
+    throw error;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    console.log('Document upload request received');
+    
     // 检查请求是否是FormData
     if (request.headers.get('content-type')?.includes('multipart/form-data')) {
       const formData = await request.formData();
@@ -17,8 +36,16 @@ export async function POST(request: NextRequest) {
       const type = formData.get('type') as string;
       const description = formData.get('description') as string;
       
+      console.log('Received document upload request:', {
+        fileName: file?.name,
+        projectId,
+        name,
+        type
+      });
+      
       // 验证必填字段
       if (!file || !projectId || !name || !type) {
+        console.error('Missing required fields', { file: !!file, projectId, name, type });
         return NextResponse.json(
           { error: 'Missing required fields' },
           { status: 400 }
@@ -31,25 +58,39 @@ export async function POST(request: NextRequest) {
       });
       
       if (!project) {
+        console.error('Project not found:', projectId);
         return NextResponse.json(
           { error: 'Project not found' },
           { status: 404 }
         );
       }
       
-      // 创建上传目录
-      const uploadDir = join(process.cwd(), 'public', 'uploads');
+      // 确保上传目录存在
+      const uploadDir = await ensureUploadDirExists();
       
       // 生成唯一文件名
       const uniqueFilename = `${uuidv4()}-${file.name}`;
       const filePath = join(uploadDir, uniqueFilename);
       
+      console.log('Saving file to:', filePath);
+      
       // 将文件保存到服务器
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
+      
+      try {
+        await writeFile(filePath, buffer);
+        console.log('File saved successfully');
+      } catch (fileError) {
+        console.error('Error writing file:', fileError);
+        return NextResponse.json(
+          { error: 'Failed to save file to server' },
+          { status: 500 }
+        );
+      }
       
       // 创建文档记录
+      console.log('Creating document record in database');
       const document = await prisma.document.create({
         data: {
           name,
@@ -61,6 +102,7 @@ export async function POST(request: NextRequest) {
         },
       });
       
+      console.log('Document created successfully:', document.id);
       return NextResponse.json(document, { status: 201 });
     } else {
       // 处理JSON请求
