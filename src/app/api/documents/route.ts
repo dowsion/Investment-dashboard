@@ -44,7 +44,7 @@ export const config = {
 };
 
 // 将文件大小限制设为10MB (更合理的限制，避免过大文件导致问题)
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 // 检查请求大小是否超过限制 - 修改为更宽松的检查
 function checkRequestSize(request: NextRequest): boolean {
@@ -52,7 +52,7 @@ function checkRequestSize(request: NextRequest): boolean {
   if (contentLength) {
     const size = parseInt(contentLength, 10);
     // 设置为更大值，允许额外的表单数据
-    const MAX_REQUEST_SIZE = 12 * 1024 * 1024; // 12MB
+    const MAX_REQUEST_SIZE = 120 * 1024 * 1024; // 120MB
     
     if (size > MAX_REQUEST_SIZE) {
       console.error(`Request size (${size} bytes / ${(size / (1024 * 1024)).toFixed(2)}MB) exceeds the limit (${MAX_REQUEST_SIZE} bytes / ${(MAX_REQUEST_SIZE / (1024 * 1024)).toFixed(2)}MB)`);
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // 检查请求大小
     if (!checkRequestSize(request)) {
       return NextResponse.json(
-        { error: '请求大小超过限制 (12MB)' },
+        { error: '请求大小超过限制 (120MB)' },
         { status: 413 }
       );
     }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       console.error(`File too large: ${file.size} bytes (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max allowed: ${MAX_FILE_SIZE} bytes (${(MAX_FILE_SIZE / (1024 * 1024)).toFixed(2)} MB)`);
       return NextResponse.json(
-        { error: `文件大小超过限制 (10MB)。当前文件大小: ${(file.size / (1024 * 1024)).toFixed(2)}MB` },
+        { error: `文件大小超过限制 (100MB)。当前文件大小: ${(file.size / (1024 * 1024)).toFixed(2)}MB` },
         { status: 413 }
       );
     }

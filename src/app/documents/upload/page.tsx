@@ -45,10 +45,10 @@ export default function UploadDocumentPage() {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       
-      // 前端文件大小校验 - 10MB限制
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      // 前端文件大小校验 - 100MB限制
+      const maxSize = 100 * 1024 * 1024; // 100MB
       if (selectedFile.size > maxSize) {
-        setError(`文件太大！最大允许上传10MB，当前文件大小为 ${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`);
+        setError(`文件太大！最大允许上传100MB，当前文件大小为 ${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`);
       } else {
         // 清除之前的错误
         if (error && error.includes('文件太大')) {
@@ -80,10 +80,10 @@ export default function UploadDocumentPage() {
       return;
     }
     
-    // 文件大小验证 - 10MB限制
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // 文件大小验证 - 100MB限制
+    const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
-      setError(`文件太大！最大允许上传10MB，当前文件大小为 ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      setError(`文件太大！最大允许上传100MB，当前文件大小为 ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
     
@@ -152,7 +152,7 @@ export default function UploadDocumentPage() {
         // 检查是否为413错误 - 负载过大
         if (response.status === 413) {
           console.error("File too large error (413):", response.statusText);
-          setError(`文件太大。服务器允许的最大文件大小为10MB。您的文件可能超出了服务器配置的限制。`);
+          setError(`文件太大。服务器允许的最大文件大小为100MB。您的文件可能超出了服务器配置的限制。`);
           return;
         }
         
@@ -183,7 +183,7 @@ export default function UploadDocumentPage() {
         
         // 根据HTTP状态码提供更具体的错误信息
         if (response.status === 413) {
-          errorMessage = "文件太大。服务器允许的最大文件大小为10MB。";
+          errorMessage = "文件太大。服务器允许的最大文件大小为100MB。";
         } else if (response.status === 403) {
           errorMessage = "您没有上传文档的权限。";
         } else if (response.status === 500) {
@@ -319,7 +319,7 @@ export default function UploadDocumentPage() {
             <div>
               <label className="block text-gray-700 font-bold mb-2" htmlFor="file">
                 Document File <span className="text-red-500">*</span>
-                <span className="ml-2 text-xs text-gray-500 font-normal">(最大文件大小: 10MB)</span>
+                <span className="ml-2 text-xs text-gray-500 font-normal">(最大文件大小: 100MB)</span>
               </label>
               <input
                 type="file"
