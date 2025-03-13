@@ -22,7 +22,7 @@ export default function NewPortfolioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<(File | null)[]>([]);
   const [documentTitles, setDocumentTitles] = useState<string[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>([]);
   
@@ -34,10 +34,41 @@ export default function NewPortfolioPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFile = e.target.files[0];
+      
+      // 检查文件大小是否超过50MB
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setError('File size exceeds the 50MB limit. Please choose a smaller file.');
+        return;
+      }
+      
+      // 更新文件数组
       const newFiles = [...files];
-      newFiles[index] = e.target.files[0];
+      newFiles[index] = selectedFile;
+      
+      // 确保documentTitles数组与files数组长度一致
+      const newTitles = [...documentTitles];
+      while (newTitles.length <= index) {
+        newTitles.push('');
+      }
+      
+      // 自动使用文件名作为文档标题
+      newTitles[index] = selectedFile.name;
+      
+      // 确保documentTypes数组与files数组长度一致
+      const newTypes = [...documentTypes];
+      while (newTypes.length <= index) {
+        newTypes.push('business_plan');
+      }
+      
+      // 更新所有状态
       setFiles(newFiles);
+      setDocumentTitles(newTitles);
+      setDocumentTypes(newTypes);
+      
+      // 清除错误信息
+      setError('');
     }
   };
 
@@ -53,13 +84,27 @@ export default function NewPortfolioPage() {
     setDocumentTypes(newTypes);
   };
 
-  const addFileInput = () => {
-    setFiles([...files, null as unknown as File]);
-    setDocumentTitles([...documentTitles, '']);
-    setDocumentTypes([...documentTypes, 'business_plan']);
+  const handleAddDocument = () => {
+    // 确保添加新文档时，所有数组都同步添加一个元素
+    const newFiles = [...files, null];
+    const newTitles = [...documentTitles];
+    const newTypes = [...documentTypes];
+    
+    // 确保标题和类型数组与文件数组长度保持一致
+    while (newTitles.length < newFiles.length) {
+      newTitles.push('');
+    }
+    
+    while (newTypes.length < newFiles.length) {
+      newTypes.push('business_plan');
+    }
+    
+    setFiles(newFiles);
+    setDocumentTitles(newTitles);
+    setDocumentTypes(newTypes);
   };
 
-  const removeFileInput = (index: number) => {
+  const handleRemoveDocument = (index: number) => {
     const newFiles = [...files];
     const newTitles = [...documentTitles];
     const newTypes = [...documentTypes];
@@ -112,7 +157,11 @@ export default function NewPortfolioPage() {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('projectId', projectData.id);
-            formData.append('name', documentTitles[index] || file.name);
+            
+            // 确保name字段始终有值
+            const documentName = documentTitles[index]?.trim() || file.name || `Document ${index + 1}`;
+            formData.append('name', documentName);
+            
             formData.append('type', documentTypes[index]);
             
             return fetch('/api/documents', {
@@ -353,7 +402,7 @@ export default function NewPortfolioPage() {
               <h2 className="text-xl font-semibold text-gray-800">Document Upload</h2>
               <button 
                 type="button" 
-                onClick={addFileInput}
+                onClick={handleAddDocument}
                 className="bg-[#3a67c4] hover:bg-[#5e82d2] text-white font-medium py-3 px-6 rounded inline-flex items-center"
               >
                 <DocumentPlusIcon className="h-5 w-5 mr-2" />
@@ -374,29 +423,14 @@ export default function NewPortfolioPage() {
                       <h3 className="font-medium text-gray-800">Document #{index + 1}</h3>
                       <button 
                         type="button" 
-                        onClick={() => removeFileInput(index)}
+                        onClick={() => handleRemoveDocument(index)}
                         className="text-red-500 hover:text-red-700"
                       >
                         Remove
                       </button>
                     </div>
                     
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-gray-700 font-bold mb-2" htmlFor={`document-title-${index}`}>
-                          Document Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id={`document-title-${index}`}
-                          value={documentTitles[index] || ''}
-                          onChange={(e) => handleDocumentTitleChange(e, index)}
-                          required
-                          className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
-                          placeholder="Enter document title"
-                        />
-                      </div>
-                      
+                    <div className="grid grid-cols-1 xl:grid-cols-1 gap-4">
                       <div>
                         <label className="block text-gray-700 font-bold mb-2" htmlFor={`document-type-${index}`}>
                           Document Type <span className="text-red-500">*</span>
@@ -418,20 +452,31 @@ export default function NewPortfolioPage() {
                         </select>
                       </div>
                       
-                      <div className="xl:col-span-2">
+                      <div>
                         <label className="block text-gray-700 font-bold mb-2" htmlFor={`file-${index}`}>
                           File <span className="text-red-500">*</span>
+                          <span className="ml-2 text-xs text-gray-500 font-normal">(Max file size: 50MB)</span>
                         </label>
-                        <input
-                          type="file"
-                          id={`file-${index}`}
-                          onChange={(e) => handleFileChange(e, index)}
-                          required
-                          className="shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
-                        />
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id={`file-${index}`}
+                            onChange={(e) => handleFileChange(e, index)}
+                            required
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+                          <div className={`flex items-center justify-between shadow-sm border ${file ? 'border-blue-300 bg-blue-50' : 'border-gray-300'} rounded-md p-3`}>
+                            <span className="text-gray-700 truncate">
+                              {file ? file.name : 'Click to select a file...'}
+                            </span>
+                            <span className="text-blue-500 text-sm font-medium">
+                              Browse
+                            </span>
+                          </div>
+                        </div>
                         {file && (
                           <p className="mt-1 text-sm text-gray-500">
-                            Selected file: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                            File size: {(file.size / 1024).toFixed(2)} KB
                           </p>
                         )}
                       </div>

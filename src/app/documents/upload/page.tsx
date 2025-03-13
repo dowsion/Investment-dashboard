@@ -46,11 +46,31 @@ export default function UploadDocumentPage() {
     }
   };
 
+  const handleDocumentTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    setDocumentType(newType);
+    
+    // 如果文档类型为general，则不要求projectId
+    if (newType === 'general') {
+      // 不做任何验证
+    } else if (!projectId) {
+      // 对于其他类型，如果没有选择项目，提示用户
+      console.log('Non-general documents require a portfolio selection');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 基本验证
     if (!file) {
       setError('Please select a file to upload');
+      return;
+    }
+    
+    // 对于非general类型文档，验证是否选择了项目
+    if (documentType !== 'general' && !projectId) {
+      setError('Please select an associated portfolio for this document type');
       return;
     }
     
@@ -59,18 +79,37 @@ export default function UploadDocumentPage() {
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('projectId', projectId);
-    formData.append('title', title);
-    formData.append('description', description);
+    
+    // 对于general类型文档，不需要projectId
+    if (documentType !== 'general' && projectId) {
+      formData.append('projectId', projectId);
+    }
+    
+    // 使用title作为name参数
+    formData.append('name', title);
     formData.append('type', documentType);
     
+    if (description) {
+      formData.append('description', description);
+    }
+    
     try {
+      console.log("Submitting document with type:", documentType, "projectId:", projectId || "none");
+      
       const response = await fetch('/api/documents', {
         method: 'POST',
+        headers: {
+          // 添加管理员认证头部
+          'X-Admin-Auth': 'true',
+          'X-Admin-Token': localStorage.getItem('adminAuthenticated') || ''
+        },
         body: formData,
       });
       
       if (response.ok) {
+        const result = await response.json();
+        console.log("Document uploaded successfully:", result);
+        
         setSuccess('Document uploaded successfully!');
         // Reset form
         setFile(null);
@@ -84,12 +123,20 @@ export default function UploadDocumentPage() {
           router.push('/documents');
         }, 2000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to upload document');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorData = { error: `Server error (${response.status})` };
+        }
+        
+        console.error("Document upload failed:", errorData, "Status:", response.status);
+        setError(errorData.error || `Failed to upload document (Status: ${response.status})`);
       }
     } catch (err) {
-      setError('An error occurred while uploading the document');
       console.error('Error uploading document:', err);
+      setError(`An error occurred while uploading the document: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -125,7 +172,8 @@ export default function UploadDocumentPage() {
           <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="block text-gray-700 font-bold mb-2" htmlFor="projectId">
-                Associated Portfolio
+                Associated Portfolio {documentType !== 'general' && <span className="text-red-500">*</span>}
+                {documentType === 'general' && <span className="ml-2 text-xs text-gray-500 font-normal">(Optional for General Documents)</span>}
               </label>
               <select
                 id="projectId"
@@ -133,6 +181,7 @@ export default function UploadDocumentPage() {
                 onChange={(e) => setProjectId(e.target.value)}
                 className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
                 disabled={projectsLoading}
+                required={documentType !== 'general'}
               >
                 <option value="">Select a portfolio</option>
                 {projects.map((project: any) => (
@@ -165,7 +214,7 @@ export default function UploadDocumentPage() {
               <select
                 id="type"
                 value={documentType}
-                onChange={(e) => setDocumentType(e.target.value)}
+                onChange={handleDocumentTypeChange}
                 className="shadow-sm border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full p-3 text-gray-700"
                 required
               >

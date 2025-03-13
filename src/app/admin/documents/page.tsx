@@ -222,26 +222,26 @@ export default function AdminDocuments() {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button 
                         onClick={() => toggleVisibility(doc.id, !!doc.isVisible)}
-                        className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded 
+                        className={`inline-flex items-center justify-center px-4 py-1.5 border border-transparent text-xs font-medium rounded min-w-[90px] 
                           ${doc.isVisible 
                             ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                             : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
                       >
                         {doc.isVisible ? (
                           <>
-                            <EyeIcon className="h-4 w-4 mr-1" />
-                            Visible
+                            <EyeIcon className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="whitespace-nowrap">Visible</span>
                           </>
                         ) : (
                           <>
-                            <EyeSlashIcon className="h-4 w-4 mr-1" />
-                            Hidden
+                            <EyeSlashIcon className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="whitespace-nowrap">Hidden</span>
                           </>
                         )}
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end items-center space-x-4">
+                      <div className="flex justify-end items-center space-x-6">
                         {doc.url && (
                           <>
                             <Link 

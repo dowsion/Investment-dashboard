@@ -108,12 +108,6 @@ export default async function PortfolioDetailPage({
                 const type = doc.type || 'other';
                 const IconComponent = documentIconMap[type] || DocumentTextIcon;
                 
-                // 获取文件名
-                let fileName = '';
-                if (doc.url && doc.url.includes('/')) {
-                  fileName = doc.url.split('/').pop() || '';
-                }
-                
                 return (
                   <div key={doc.id} className="p-2 md:p-3 border rounded">
                     <Link 
@@ -125,7 +119,6 @@ export default async function PortfolioDetailPage({
                       <IconComponent className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
                       <div>
                         <span className="font-medium">{documentTypeMap[type]}</span>
-                        {fileName && <span className="text-gray-600 ml-1">: {fileName}</span>}
                       </div>
                     </Link>
                   </div>

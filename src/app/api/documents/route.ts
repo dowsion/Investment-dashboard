@@ -27,6 +27,18 @@ async function ensureUploadDirExists() {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// 设置API配置
+export const config = {
+  api: {
+    // 增加请求体大小限制为50MB
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+    // 增加响应大小限制为50MB
+    responseLimit: '50mb',
+  },
+};
+
 // 从请求头中验证管理员权限
 const verifyAdmin = (request: NextRequest) => {
   const adminAuth = request.headers.get('X-Admin-Auth');
@@ -49,10 +61,19 @@ export async function POST(request: NextRequest) {
     const type = formData.get('type') as string;
     
     // 数据验证
-    if (!file || !projectId || !name || !type) {
+    if (!file || !name || !type) {
       console.error('Missing required fields', { file: !!file, projectId, name, type });
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+    
+    // 对于非general类型的文档，projectId是必需的
+    if (type !== 'general' && !projectId) {
+      console.error('Missing projectId for non-general document');
+      return NextResponse.json(
+        { error: 'Project ID is required for portfolio-specific documents' },
         { status: 400 }
       );
     }
@@ -70,17 +91,19 @@ export async function POST(request: NextRequest) {
     // 验证文件类型
     // TODO: 实现文件类型验证
     
-    // 验证项目存在
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-    });
-    
-    if (!project) {
-      console.error('Portfolio not found:', projectId);
-      return NextResponse.json(
-        { error: 'Portfolio not found' },
-        { status: 404 }
-      );
+    // 验证项目存在（仅对于非general类型的文档）
+    if (type !== 'general' && projectId) {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+      });
+      
+      if (!project) {
+        console.error('Portfolio not found:', projectId);
+        return NextResponse.json(
+          { error: 'Portfolio not found' },
+          { status: 404 }
+        );
+      }
     }
     
     // 保存文件到磁盘
@@ -99,21 +122,93 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer);
     
     // 保存文档元数据到数据库
+    const documentData: any = {
+      name,
+      type,
+      url: `/uploads/${fileName}`,
+      isVisible: true,
+    };
+    
+    // 处理projectId (Prisma模型中projectId可能是必需的)
+    if (type !== 'general') {
+      // 对于非general类型文档，使用提供的projectId
+      if (projectId) {
+        documentData.projectId = projectId;
+      } else {
+        return NextResponse.json(
+          { error: 'Project ID is required for portfolio-specific documents' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // 对于general类型文档，如果提供了projectId则使用，否则查找或创建一个默认项目
+      if (projectId) {
+        documentData.projectId = projectId;
+      } else {
+        // 查找一个名为"General Documents"的默认项目，如果不存在则创建一个
+        let generalProject = await prisma.project.findFirst({
+          where: { name: "General Documents" }
+        });
+        
+        if (!generalProject) {
+          console.log("Creating a default 'General Documents' portfolio");
+          
+          try {
+            // 创建项目时使用完整的数据结构
+            const now = new Date();
+            
+            generalProject = await prisma.project.create({
+              data: {
+                name: "General Documents",
+                briefIntro: "This is a system-generated portfolio for general documents that don't belong to any specific portfolio.",
+                portfolioStatus: "",
+                investmentDate: now, // 直接使用Date对象，让Prisma处理转换
+                capitalInvested: 0,
+                initialShareholdingRatio: 0,
+                currentShareholdingRatio: 0,
+                investmentCost: 0,
+                latestFinancingValuation: 0,
+                bookValue: 0,
+                moic: 0,
+              }
+            });
+            
+            console.log("Successfully created 'General Documents' portfolio:", generalProject);
+          } catch (createError) {
+            console.error("Failed to create 'General Documents' portfolio:", createError);
+            throw createError; // 重新抛出错误以便上层处理
+          }
+        }
+        
+        if (generalProject) {
+          console.log("Using 'General Documents' portfolio:", generalProject.id);
+          documentData.projectId = generalProject.id;
+        } else {
+          // 如果未能获取或创建项目，我们不能继续
+          throw new Error("Failed to get or create the 'General Documents' portfolio");
+        }
+      }
+    }
+    
+    console.log("Creating document with data:", documentData);
+    
     const document = await prisma.document.create({
-      data: {
-        name,
-        type,
-        url: `/uploads/${fileName}`,
-        projectId,
-        isVisible: true,
-      },
+      data: documentData,
     });
     
     return NextResponse.json(document, { status: 201 });
   } catch (error) {
     console.error('Error uploading document:', error);
+    
+    // 获取并记录更详细的错误信息
+    let errorMessage = 'Failed to upload document';
+    if (error instanceof Error) {
+      errorMessage = `${errorMessage}: ${error.message}`;
+      console.error('Error details:', error.stack);
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to upload document' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

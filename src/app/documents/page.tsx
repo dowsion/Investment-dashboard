@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PrismaClient, Document, Project } from '@prisma/client';
 import Link from 'next/link';
-import { DocumentIcon, DocumentTextIcon, ArrowDownTrayIcon, EyeIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { DocumentIcon, DocumentTextIcon, ArrowDownTrayIcon, EyeIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const prisma = new PrismaClient();
 
@@ -85,8 +85,8 @@ export default function DocumentsPage() {
     if (field !== sortField) return null;
     
     return sortDirection === 'asc' 
-      ? <ArrowUpIcon className="w-4 h-4 ml-1 inline-block" /> 
-      : <ArrowDownIcon className="w-4 h-4 ml-1 inline-block" />;
+      ? <ChevronUpIcon className="w-4 h-4 ml-1.5 inline-block align-middle" /> 
+      : <ChevronDownIcon className="w-4 h-4 ml-1.5 inline-block align-middle" />;
   };
 
   // 获取正确的文件URL
@@ -194,7 +194,7 @@ export default function DocumentsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {doc.url && (
-                        <div className="flex justify-end items-center space-x-4">
+                        <div className="flex justify-end items-center space-x-6">
                           <Link 
                             href={getDocumentUrl(doc.url)} 
                             className="text-[#3a67c4] hover:text-[#5e82d2] inline-flex items-center"

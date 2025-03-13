@@ -20,6 +20,12 @@ export default async function PortfolioPage() {
     _count: {
       id: true,
     },
+    where: {
+      // 排除名为"General Documents"的项目
+      name: {
+        not: "General Documents"
+      }
+    }
   });
 
   // Extract values or default to 0 if null

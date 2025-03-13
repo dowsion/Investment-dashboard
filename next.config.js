@@ -15,13 +15,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // 增加API路由的请求体大小限制为50MB
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-    responseLimit: '50mb',
-  },
   // 确保特定路径能够被访问
   async rewrites() {
     return [

@@ -29,6 +29,14 @@ function getMimeType(filename: string): string {
   return ext && mimeTypes[ext] ? mimeTypes[ext] : 'application/octet-stream';
 }
 
+// 设置API配置
+export const config = {
+  api: {
+    // 禁用响应大小限制，允许更大的文件下载
+    responseLimit: false
+  },
+};
+
 // 文件服务API
 export async function GET(
   request: NextRequest,

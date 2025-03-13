@@ -275,13 +275,13 @@ export default function AdminPage() {
           </p>
           <button
             onClick={() => navigateToProtectedRoute('/documents/upload')}
-            className="block w-full bg-[#3a67c4] hover:bg-[#5e82d2] text-white font-medium py-3 px-4 rounded text-center"
+            className="block w-full bg-[#3a67c4] hover:bg-[#5e82d2] text-white font-medium py-3 px-4 rounded text-center mb-4"
           >
             Upload New Document
           </button>
           <button
             onClick={() => navigateToProtectedRoute('/admin/documents')}
-            className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded text-center"
+            className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded text-center"
           >
             Manage Documents
           </button>
