@@ -96,6 +96,13 @@ export default function UploadDocumentPage() {
     try {
       console.log("Submitting document with type:", documentType, "projectId:", projectId || "none");
       
+      // 记录文件信息
+      console.log("File details:", {
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        type: file.type
+      });
+      
       const response = await fetch('/api/documents', {
         method: 'POST',
         headers: {
@@ -132,11 +139,38 @@ export default function UploadDocumentPage() {
         }
         
         console.error("Document upload failed:", errorData, "Status:", response.status);
-        setError(errorData.error || `Failed to upload document (Status: ${response.status})`);
+        
+        // 更详细的错误信息
+        let errorMessage = errorData.error || `Failed to upload document (Status: ${response.status})`;
+        
+        // 根据HTTP状态码提供更具体的错误信息
+        if (response.status === 413) {
+          errorMessage = "The file is too large. Maximum allowed size is 50MB.";
+        } else if (response.status === 403) {
+          errorMessage = "You don't have permission to upload documents.";
+        } else if (response.status === 500) {
+          errorMessage = `Server error: ${errorMessage}. This might be due to filesystem permissions or disk space issues.`;
+        }
+        
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('Error uploading document:', err);
-      setError(`An error occurred while uploading the document: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      
+      // 提供更友好的错误信息
+      let errorMessage = "An error occurred while uploading the document";
+      
+      if (err instanceof Error) {
+        console.error('Error details:', err.stack);
+        errorMessage = `${errorMessage}: ${err.message}`;
+        
+        // 处理网络错误
+        if (err.message.includes('Failed to fetch') || err.message.includes('Network')) {
+          errorMessage = "Network error: Please check your internet connection and try again.";
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

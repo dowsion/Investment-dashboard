@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
   try {
     // 验证管理员权限 - 用于POST请求时
     const isAdmin = verifyAdmin(request);
+    console.log("Admin authentication:", isAdmin ? "Successful" : "Failed");
+    
     const formData = await request.formData();
     
     // 获取表单数据
@@ -59,6 +61,15 @@ export async function POST(request: NextRequest) {
     const projectId = formData.get('projectId') as string;
     const name = formData.get('name') as string;
     const type = formData.get('type') as string;
+    
+    console.log("Received document upload request:", { 
+      hasFile: !!file, 
+      fileName: file?.name,
+      fileSize: file?.size,
+      projectId, 
+      name, 
+      type 
+    });
     
     // 数据验证
     if (!file || !name || !type) {
@@ -111,15 +122,27 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     
     // 创建上传目录
+    console.log("Creating upload directory if needed");
     const uploadDir = await ensureUploadDirExists();
+    console.log("Upload directory path:", uploadDir);
     
     // 创建唯一文件名（文件时间戳 + 原始文件名）
     const timestamp = Date.now();
     const fileName = `${timestamp}-${file.name.replace(/\s+/g, '_')}`;
     const filePath = join(uploadDir, fileName);
+    console.log("Saving file to:", filePath);
     
-    // 执行写入
-    await writeFile(filePath, buffer);
+    try {
+      // 执行写入
+      await writeFile(filePath, buffer);
+      console.log("File successfully written to disk");
+    } catch (writeError) {
+      console.error("Failed to write file to disk:", writeError);
+      return NextResponse.json(
+        { error: `Failed to save file: ${writeError instanceof Error ? writeError.message : 'Unknown error'}` },
+        { status: 500 }
+      );
+    }
     
     // 保存文档元数据到数据库
     const documentData: any = {
@@ -205,6 +228,13 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       errorMessage = `${errorMessage}: ${error.message}`;
       console.error('Error details:', error.stack);
+    }
+    
+    // 检查是否为权限错误
+    const errorString = String(error);
+    if (errorString.includes('permission') || errorString.includes('EACCES')) {
+      errorMessage = `File system permission error: ${errorMessage}`;
+      console.error('Likely a permissions issue with the upload directory');
     }
     
     return NextResponse.json(
