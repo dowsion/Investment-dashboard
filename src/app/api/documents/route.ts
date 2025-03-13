@@ -27,17 +27,40 @@ async function ensureUploadDirExists() {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// 设置API配置
+// Next.js App Router API配置 - 使用新的方式
+export const maxDuration = 60; // 允许API路由运行更长时间
+export const fetchCache = 'force-no-store';
+
+// 设置API配置 - 注意：在App Router中此配置可能不再完全有效
 export const config = {
   api: {
-    // 增加请求体大小限制为50MB
+    // 增加请求体大小限制为100MB
     bodyParser: {
-      sizeLimit: '50mb',
+      sizeLimit: '100mb',
     },
-    // 增加响应大小限制为50MB
-    responseLimit: '50mb',
+    // 增加响应大小限制为100MB
+    responseLimit: '100mb',
   },
 };
+
+// 将文件大小限制设为10MB (更合理的限制，避免过大文件导致问题)
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// 检查请求大小是否超过限制 - 修改为更宽松的检查
+function checkRequestSize(request: NextRequest): boolean {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength) {
+    const size = parseInt(contentLength, 10);
+    // 设置为更大值，允许额外的表单数据
+    const MAX_REQUEST_SIZE = 12 * 1024 * 1024; // 12MB
+    
+    if (size > MAX_REQUEST_SIZE) {
+      console.error(`Request size (${size} bytes / ${(size / (1024 * 1024)).toFixed(2)}MB) exceeds the limit (${MAX_REQUEST_SIZE} bytes / ${(MAX_REQUEST_SIZE / (1024 * 1024)).toFixed(2)}MB)`);
+      return false;
+    }
+  }
+  return true;
+}
 
 // 从请求头中验证管理员权限
 const verifyAdmin = (request: NextRequest) => {
@@ -50,6 +73,18 @@ const verifyAdmin = (request: NextRequest) => {
 // 上传文档
 export async function POST(request: NextRequest) {
   try {
+    // 记录请求信息
+    const contentLength = request.headers.get('content-length');
+    console.log(`Received upload request: Content-Length: ${contentLength} bytes (${contentLength ? (parseInt(contentLength, 10) / (1024 * 1024)).toFixed(2) : 'unknown'} MB)`);
+    
+    // 检查请求大小
+    if (!checkRequestSize(request)) {
+      return NextResponse.json(
+        { error: '请求大小超过限制 (12MB)' },
+        { status: 413 }
+      );
+    }
+
     // 验证管理员权限 - 用于POST请求时
     const isAdmin = verifyAdmin(request);
     console.log("Admin authentication:", isAdmin ? "Successful" : "Failed");
@@ -89,12 +124,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // 验证文件大小 (50MB限制)
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+    // 验证文件大小
     if (file.size > MAX_FILE_SIZE) {
-      console.error('File too large:', file.size, 'bytes. Max allowed:', MAX_FILE_SIZE, 'bytes');
+      console.error(`File too large: ${file.size} bytes (${(file.size / (1024 * 1024)).toFixed(2)} MB). Max allowed: ${MAX_FILE_SIZE} bytes (${(MAX_FILE_SIZE / (1024 * 1024)).toFixed(2)} MB)`);
       return NextResponse.json(
-        { error: `File size exceeds the limit (50MB). Current file size: ${(file.size / (1024 * 1024)).toFixed(2)}MB` },
+        { error: `文件大小超过限制 (10MB)。当前文件大小: ${(file.size / (1024 * 1024)).toFixed(2)}MB` },
         { status: 413 }
       );
     }

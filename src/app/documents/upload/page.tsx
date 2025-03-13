@@ -42,7 +42,19 @@ export default function UploadDocumentPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      
+      // 前端文件大小校验 - 10MB限制
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (selectedFile.size > maxSize) {
+        setError(`文件太大！最大允许上传10MB，当前文件大小为 ${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`);
+      } else {
+        // 清除之前的错误
+        if (error && error.includes('文件太大')) {
+          setError('');
+        }
+      }
     }
   };
 
@@ -64,7 +76,14 @@ export default function UploadDocumentPage() {
     
     // 基本验证
     if (!file) {
-      setError('Please select a file to upload');
+      setError('请选择要上传的文件');
+      return;
+    }
+    
+    // 文件大小验证 - 10MB限制
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setError(`文件太大！最大允许上传10MB，当前文件大小为 ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
     
@@ -130,9 +149,28 @@ export default function UploadDocumentPage() {
           router.push('/documents');
         }, 2000);
       } else {
+        // 检查是否为413错误 - 负载过大
+        if (response.status === 413) {
+          console.error("File too large error (413):", response.statusText);
+          setError(`文件太大。服务器允许的最大文件大小为10MB。您的文件可能超出了服务器配置的限制。`);
+          return;
+        }
+        
+        // 尝试获取错误详情
         let errorData;
+        let errorText = '';
+        
         try {
-          errorData = await response.json();
+          // 首先尝试解析为JSON
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            // 如果不是JSON，获取文本内容
+            errorText = await response.text();
+            console.error("Non-JSON error response:", errorText.substring(0, 200) + '...');
+            errorData = { error: `Server returned non-JSON response (Status: ${response.status})` };
+          }
         } catch (parseError) {
           console.error("Failed to parse error response:", parseError);
           errorData = { error: `Server error (${response.status})` };
@@ -145,11 +183,11 @@ export default function UploadDocumentPage() {
         
         // 根据HTTP状态码提供更具体的错误信息
         if (response.status === 413) {
-          errorMessage = "The file is too large. Maximum allowed size is 50MB.";
+          errorMessage = "文件太大。服务器允许的最大文件大小为10MB。";
         } else if (response.status === 403) {
-          errorMessage = "You don't have permission to upload documents.";
+          errorMessage = "您没有上传文档的权限。";
         } else if (response.status === 500) {
-          errorMessage = `Server error: ${errorMessage}. This might be due to filesystem permissions or disk space issues.`;
+          errorMessage = `服务器错误: ${errorMessage}。可能是文件系统权限或磁盘空间问题。`;
         }
         
         setError(errorMessage);
@@ -281,7 +319,7 @@ export default function UploadDocumentPage() {
             <div>
               <label className="block text-gray-700 font-bold mb-2" htmlFor="file">
                 Document File <span className="text-red-500">*</span>
-                <span className="ml-2 text-xs text-gray-500 font-normal">(Max file size: 50MB)</span>
+                <span className="ml-2 text-xs text-gray-500 font-normal">(最大文件大小: 10MB)</span>
               </label>
               <input
                 type="file"
@@ -292,7 +330,7 @@ export default function UploadDocumentPage() {
               />
               {file && (
                 <p className="mt-1 text-sm text-gray-500">
-                  Selected file: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                  Selected file: {file.name} ({(file.size / 1024).toFixed(2)} KB / {(file.size / (1024 * 1024)).toFixed(2)} MB)
                 </p>
               )}
             </div>

@@ -6,10 +6,12 @@ module.exports = {
     instances: 1,
     autorestart: true,
     watch: false,
-    max_memory_restart: '1G',
-    env_production: {
+    max_memory_restart: '2G',
+    kill_timeout: 3000,
+    env: {
       NODE_ENV: 'production',
-      PORT: 3000
-    }
+      NODE_OPTIONS: '--max-http-header-size=16384 --max-old-space-size=4096'
+    },
+    exp_backoff_restart_delay: 100
   }]
 } 
